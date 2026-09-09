@@ -1,0 +1,23 @@
+
+// {
+//   "extends": "expo/tsconfig.base",
+//   "compilerOptions": {
+//     "strict": true,
+//     "types": ["nativewind/types"],
+//     "paths": {
+//       "@/*": ["./*"]
+//     }
+//   }
+// }
+
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["nativewind/types"],
+    // "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
