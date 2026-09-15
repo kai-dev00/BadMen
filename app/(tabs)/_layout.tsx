@@ -26,9 +26,9 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="play"
+        name="tournament"
         options={{
-          title: "Play",
+          title: "Tournament",
           tabBarIcon: ({ size, color }) => (
             <Trophy size={size} color={color} />
           ),

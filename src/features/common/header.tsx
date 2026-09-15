@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
+import { ChevronLeft } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface HeaderProps {
   title: string;
@@ -17,17 +17,17 @@ export default function Header({
   showBack,
   onBackPress,
 }: HeaderProps) {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View
-      style={{ paddingTop: insets.top + 12 }}
-      className="flex-row items-center justify-between px-5 pb-4"
-    >
+    <View className="flex-row items-center justify-between px-5 py-3">
       <View className="flex-row items-center gap-3">
         {showBack && (
-          <TouchableOpacity onPress={onBackPress} hitSlop={8}>
-            <Text className="text-lg font-semibold text-[#1a1a1a]">back</Text>
+          <TouchableOpacity
+            onPress={onBackPress}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <ChevronLeft size={26} color="#1a1a1a" />
           </TouchableOpacity>
         )}
         <Text className="text-2xl font-bold text-[#1a1a1a]">{title}</Text>

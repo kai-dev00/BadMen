@@ -10,6 +10,7 @@ import {
 import { QuickForm } from "./components/QuickForm";
 import { CreateQuickMatch } from "./types/quickSchema";
 import { useQuickMatches } from "./hooks/useQuickMatches";
+import Header from "../common/header";
 
 export default function AddQuickMatchScreen() {
 
@@ -24,8 +25,9 @@ export default function AddQuickMatchScreen() {
   return (
     <SafeAreaView
       className="flex-1 bg-background"
-      edges={["bottom"]}
+      edges={["top", "bottom"]}
     >
+      <Header title="Add Quick Match" showBack onBackPress={() => router.back()} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}

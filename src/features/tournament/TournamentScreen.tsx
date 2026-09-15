@@ -1,41 +1,58 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, Search, Trash2, X } from "lucide-react-native";
+import { router } from "expo-router";
+
 import Header from "../common/header";
 import CustomList from "@/components/ui/CustomList";
 import { Input } from "@/components/ui/input";
-import MatchRow, { Match } from "./components/MatchRow";
-import { router } from "expo-router";
-import { useQuickMatches } from "./hooks/useQuickMatches";
+import TournamentRow, { TournamentListItem } from "./components/TournamentRow";
+import { useTournaments } from "./hooks/useTournaments";
 import FilterBar, {
   FilterRow,
   FilterToggleButton,
   countActiveFilters,
 } from "../common/filterBar";
 
-export default function QuickMatchScreen() {
-  const { matches, isLoading, isError, remove } = useQuickMatches();
+// NOTE: adjust these option lists to match your actual `format` / `status`
+// enum values from the tournament schema — placeholders below are guesses.
+const FORMAT_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Round robin", value: "round_robin" },
+  { label: "Knockout", value: "knockout" },
+];
+
+const STATUS_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Upcoming", value: "upcoming" },
+  { label: "Ongoing", value: "ongoing" },
+  { label: "Concluded", value: "concluded" },
+];
+
+export default function TournamentScreen() {
+  const { tournaments, isLoading, remove } = useTournaments();
+
   const [search, setSearch] = useState("");
   const [matchTypeFilter, setMatchTypeFilter] = useState<"all" | "singles" | "doubles">("all");
-  const [rematchOnly, setRematchOnly] = useState(false);
   const [bestOfFilter, setBestOfFilter] = useState<number | null>(null);
   const [scoringFilter, setScoringFilter] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7" | "30">("all");
+  const [formatFilter, setFormatFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const activeFilterCount = countActiveFilters([
     matchTypeFilter,
-    rematchOnly,
     bestOfFilter,
     scoringFilter,
-    dateFilter,
+    formatFilter,
+    statusFilter,
   ]);
 
   const filterRows: FilterRow[] = [
     {
-      key: "type-row",
+      key: "type-status-row",
       items: [
         {
           type: "group",
@@ -48,15 +65,6 @@ export default function QuickMatchScreen() {
             ],
             selected: matchTypeFilter,
             onChange: (value) => setMatchTypeFilter((value ?? "all") as typeof matchTypeFilter),
-          },
-        },
-        {
-          type: "toggle",
-          toggle: {
-            key: "rematchOnly",
-            label: "Rematches",
-            selected: rematchOnly,
-            onToggle: () => setRematchOnly((current) => !current),
           },
         },
       ],
@@ -89,87 +97,78 @@ export default function QuickMatchScreen() {
       ],
     },
     {
-      key: "date-row",
+      key: "format-row",
       items: [
         {
           type: "group",
           group: {
-            key: "date",
-            label: "Date",
-            options: [
-              { label: "All dates", value: "all" },
-              { label: "Today", value: "today" },
-              { label: "Last 7 days", value: "7" },
-              { label: "Last 30 days", value: "30" },
-            ],
-            selected: dateFilter,
-            onChange: (value) => setDateFilter((value ?? "all") as typeof dateFilter),
+            key: "format",
+            label: "Format",
+            options: FORMAT_OPTIONS,
+            selected: formatFilter,
+            onChange: (value) => setFormatFilter((value as string) ?? "all"),
+          },
+        },
+      ],
+    },
+    {
+      key: "status-row",
+      items: [
+        {
+          type: "group",
+          group: {
+            key: "status",
+            label: "Status",
+            options: STATUS_OPTIONS,
+            selected: statusFilter,
+            onChange: (value) => setStatusFilter((value as string) ?? "all"),
           },
         },
       ],
     },
   ];
 
-  const displayMatches: Match[] = matches.map((match) => ({
-    id: String(match.id),
-    matchType: match.matchType,
-    bestOf: match.bestOf,
-    scoring: match.scoring,
-    rematchNumber: match.rematchNumber,
-    createdAt: match.createdAt,
-    endedAt: match.endedAt,
-    teamASets: match.teamASets,
-    teamBSets: match.teamBSets,
-    teamAName: match.teamAName,
-    teamBName: match.teamBName,
-    playerA: match.teamA.join(" / "),
-    playerB: match.teamB.join(" / "),
-    status: match.status,
-    result:
-      match.status === "concluded"
-        ? "Match concluded"
-        : match.status === "ongoing"
-          ? "Match in progress"
-          : undefined,
+  const displayTournaments: TournamentListItem[] = tournaments.map((tournament) => ({
+    id: String(tournament.id),
+    name: tournament.name,
+    matchType: tournament.matchType,
+    bestOf: tournament.bestOf,
+    scoring: tournament.scoring,
+    format: tournament.format,
+    status: tournament.status,
+    playerCount: tournament.players.length,
   }));
 
-  const filteredMatches = useMemo(() => {
+  const filteredTournaments = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return displayMatches.filter((match) => {
-      const searchableText = [
-        match.playerA,
-        match.playerB,
-        match.teamAName,
-        match.teamBName,
-        match.matchType,
-        match.rematchNumber > 0 ? `rematch ${match.rematchNumber}` : "original",
-      ]
+    return displayTournaments.filter((tournament) => {
+      const searchableText = [tournament.name, tournament.matchType, tournament.format, tournament.status]
         .join(" ")
         .toLowerCase();
 
       return (
         (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
-        (matchTypeFilter === "all" || match.matchType === matchTypeFilter) &&
-        (!rematchOnly || match.rematchNumber > 0) &&
-        (bestOfFilter === null || match.bestOf === bestOfFilter) &&
-        (scoringFilter === null || match.scoring === scoringFilter) &&
-        matchesDateFilter(match.createdAt, dateFilter)
+        (matchTypeFilter === "all" || tournament.matchType === matchTypeFilter) &&
+        (bestOfFilter === null || tournament.bestOf === bestOfFilter) &&
+        (scoringFilter === null || tournament.scoring === scoringFilter) &&
+        (formatFilter === "all" || tournament.format === formatFilter) &&
+        (statusFilter === "all" || tournament.status === statusFilter)
       );
     });
-  }, [bestOfFilter, dateFilter, displayMatches, matchTypeFilter, rematchOnly, scoringFilter, search]);
+  }, [bestOfFilter, displayTournaments, formatFilter, matchTypeFilter, scoringFilter, search, statusFilter]);
 
-  function handlePress(match: Match) {
+  function handlePress(tournament: TournamentListItem) {
     if (selectedIds.size > 0) {
-      toggleSelection(match.id);
+      toggleSelection(tournament.id);
       return;
     }
 
-    router.push(`/quick/${match.id}`);
+    router.push(`/tournament/${tournament.id}`);
   }
 
-  function handleLongPress(match: Match) {
-    toggleSelection(match.id);
+  function handleLongPress(tournament: TournamentListItem) {
+    toggleSelection(tournament.id);
   }
 
   function toggleSelection(id: string) {
@@ -185,17 +184,15 @@ export default function QuickMatchScreen() {
     if (selectedIds.size === 0) return;
 
     Alert.alert(
-      "Delete selected matches?",
-      `This will permanently delete ${selectedIds.size} match${selectedIds.size === 1 ? "" : "es"}.`,
+      "Delete selected tournaments?",
+      `This will permanently delete ${selectedIds.size} tournament${selectedIds.size === 1 ? "" : "s"}.`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await Promise.all(
-              [...selectedIds].map((id) => remove(Number(id))),
-            );
+            await Promise.all([...selectedIds].map((id) => remove(Number(id))));
             setSelectedIds(new Set());
           },
         },
@@ -206,7 +203,7 @@ export default function QuickMatchScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#fafafa]">
       <Header
-        title={selectedIds.size > 0 ? `${selectedIds.size} selected` : "Quickey"}
+        title={selectedIds.size > 0 ? `${selectedIds.size} selected` : "Tournament"}
         rightContent={
           selectedIds.size > 0 ? (
             <Trash2 size={22} color="#b42318" />
@@ -215,26 +212,18 @@ export default function QuickMatchScreen() {
           )
         }
         onRightPress={
-          selectedIds.size > 0
-            ? handleDeleteSelected
-            : () => router.push("/quick/add")
+          selectedIds.size > 0 ? handleDeleteSelected : () => router.push("/tournament/add")
         }
       />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-muted-foreground">Loading matches...</Text>
+          <Text className="text-[#8a8a8a]">Loading tournaments...</Text>
         </View>
-      ) : isError ? (
-        <View className="flex-1 items-center justify-center px-5">
-          <Text className="text-center text-destructive">
-            Could not load quick matches.
-          </Text>
-        </View>
-      ) : displayMatches.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-5">
-          <Text className="text-center text-muted-foreground">
-            No quick matches yet. Tap + to create one.
+      ) : displayTournaments.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Text className="text-center text-[#8a8a8a]">
+            No tournaments yet. Tap + to create one.
           </Text>
         </View>
       ) : (
@@ -245,7 +234,7 @@ export default function QuickMatchScreen() {
                 <Input
                   value={search}
                   onChangeText={setSearch}
-                  placeholder="Search matches"
+                  placeholder="Search tournaments"
                   icon={Search}
                   className="w-full pl-10 pr-10"
                   returnKeyType="search"
@@ -271,21 +260,21 @@ export default function QuickMatchScreen() {
             <FilterBar visible={showFilters} rows={filterRows} />
           </View>
 
-          {filteredMatches.length === 0 ? (
+          {filteredTournaments.length === 0 ? (
             <View className="flex-1 items-center justify-center px-5">
-              <Text className="text-center text-muted-foreground">
-                No matches found for these filters.
+              <Text className="text-center text-[#8a8a8a]">
+                No tournaments found for these filters.
               </Text>
             </View>
           ) : (
             <CustomList
-              data={filteredMatches}
-              keyExtractor={(item, index) => `${item.id || "quick-match"}-${index}`}
-              itemHeight={112}
-              renderItem={(match) => (
-                <MatchRow
-                  match={match}
-                  selected={selectedIds.has(match.id)}
+              data={filteredTournaments}
+              keyExtractor={(item, index) => `${item.id || "tournament"}-${index}`}
+              itemHeight={96}
+              renderItem={(tournament) => (
+                <TournamentRow
+                  tournament={tournament}
+                  selected={selectedIds.has(tournament.id)}
                   onPress={handlePress}
                   onLongPress={handleLongPress}
                 />
@@ -296,22 +285,4 @@ export default function QuickMatchScreen() {
       )}
     </SafeAreaView>
   );
-}
-
-function matchesDateFilter(
-  value: string,
-  filter: "all" | "today" | "7" | "30",
-) {
-  if (filter === "all") return true;
-
-  const date = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
-  if (Number.isNaN(date.getTime())) return false;
-
-  const now = new Date();
-  if (filter === "today") {
-    return date.toDateString() === now.toDateString();
-  }
-
-  const days = Number(filter);
-  return now.getTime() - date.getTime() <= days * 24 * 60 * 60 * 1000;
 }

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { QuickForm } from "./components/QuickForm";
 import { useQuickMatches } from "./hooks/useQuickMatches";
 import type { CreateQuickMatch as FormQuickMatch } from "./types/quickSchema";
+import Header from "../common/header";
 
 export default function EditQuickMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,7 +49,8 @@ export default function EditQuickMatchScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <Header title="Edit Quick Match" showBack onBackPress={() => router.back()} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
