@@ -11,14 +11,13 @@ export default function QuickLayout() {
       <Stack.Screen
         name="add"
         options={{
-          headerShown: true,
           title: "Add Quick Match",
           presentation: "modal", // optional: makes it slide up like a modal
         }}
       />
       <Stack.Screen
         name="edit/[id]"
-        options={{ headerShown: true, title: "Edit Quick Match" }}
+        options={{ title: "Edit Quick Match" }}
       />
     </Stack>
   );

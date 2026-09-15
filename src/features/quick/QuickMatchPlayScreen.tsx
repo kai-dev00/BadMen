@@ -1,9 +1,17 @@
-import { Minus, Pencil, Plus } from "lucide-react-native";
-import { Stack, useLocalSearchParams, router } from "expo-router";
+import {
+  MoreVertical,
+  Minimize,
+  Minus,
+  Plus,
+} from "lucide-react-native";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { Stack, useLocalSearchParams, useNavigation, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, SafeAreaView, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
+import Header from "../common/header";
 import { cn } from "@/lib/utils";
 import type { QuickMatchSet } from "../../database/repositories/QuickMatchRepository";
 import { useQuickMatches } from "./hooks/useQuickMatches";
@@ -17,6 +25,7 @@ type Score = {
 
 export default function QuickMatchPlayScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const navigation = useNavigation();
   const {
     matches,
     isLoading,
@@ -33,6 +42,9 @@ export default function QuickMatchPlayScreen() {
     winner: Side;
     score: Score;
   } | null>(null);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [isChangingOrientation, setIsChangingOrientation] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
   const match = matches.find((item) => String(item.id) === id);
 
@@ -47,6 +59,62 @@ export default function QuickMatchPlayScreen() {
     });
     setSetNumber(history.length + 1);
   }, [match?.id]);
+
+  useEffect(() => {
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+
+    return () => {
+      void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+
+    navigation.getParent()?.setOptions({
+      tabBarStyle: isLandscape
+        ? { display: "none", height: 0 }
+        : undefined,
+    });
+
+    return () => {
+      navigation.setOptions({
+        headerShown: false,
+      });
+      navigation.getParent()?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [isLandscape, navigation]);
+
+  useEffect(() => {
+    if (match?.status !== "concluded" || !isLandscape) return;
+
+    void ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.PORTRAIT,
+    ).then(() => setIsLandscape(false));
+  }, [isLandscape, match?.status]);
+
+  async function toggleLandscape() {
+    setIsChangingOrientation(true);
+
+    try {
+      await ScreenOrientation.lockAsync(
+        isLandscape
+          ? ScreenOrientation.OrientationLock.PORTRAIT
+          : ScreenOrientation.OrientationLock.LANDSCAPE,
+      );
+      setIsLandscape((current) => !current);
+    } finally {
+      setIsChangingOrientation(false);
+    }
+  }
+
+  function toggleMatchOptions() {
+    setIsOptionsOpen((current) => !current);
+  }
 
   function changeScore(side: Side, amount: number) {
     setLastSetResult(null);
@@ -191,25 +259,188 @@ export default function QuickMatchPlayScreen() {
 
   const currentWinner = getCurrentWinner();
   const highlightedWinner = currentWinner ?? lastSetResult?.winner;
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  if (isLandscape) {
+    return (
+      <SafeAreaView
+        className="flex-1 bg-[#fafafa]"
+        edges={["top", "bottom"]}
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className="m-1 flex-1 bg-white px-4 py-3">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1">
+              <Text className="text-xl font-medium text-[#1a1a1a]">
+                {match.status === "concluded" ? "History" : `Set ${setNumber}`} | {capitalize(match.matchType)}
+              </Text>
+            </View>
+            {/* <Text className="text-base font-medium text-[#1a1a1a]">
+              {match.status === "concluded" ? "History" : `Set ${setNumber}`}
+            </Text> */}
+            {match.status !== "concluded" && (
+              <Pressable
+                onPress={toggleLandscape}
+                disabled={isChangingOrientation}
+                accessibilityRole="button"
+                accessibilityLabel="Use portrait mode"
+                accessibilityState={{
+                  busy: isChangingOrientation,
+                  checked: true,
+                }}
+                hitSlop={8}
+              >
+                <Minimize size={22} color="#1a1a1a" />
+              </Pressable>
+            )}
+          </View>
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text className="text-xs capitalize text-[#8a8a8a]">
+              {match.bestOf} sets | up to {match.scoring}
+              {match.rematchNumber > 0 && ` | Rematch #${match.rematchNumber}`}
+            </Text>
+            <Text className="text-xs text-[#8a8a8a]">
+              {formatCreatedAt(match.createdAt)}
+              {match.endedAt && ` | ${formatCreatedAt(match.endedAt, "Ended")}`}
+            </Text>
+          </View>
+
+          {match.status === "concluded" ? (
+            <View className="mt-5 flex-1 justify-center gap-3">
+              {setHistory.map((set) => (
+                <View
+                  key={set.setNumber}
+                  className="flex-row items-center justify-between px-4 py-3"
+                >
+                  <Text className="text-sm text-[#1a1a1a]">
+                    Set {set.setNumber}
+                  </Text>
+                  <Text className="text-xl font-medium text-[#1a1a1a]">
+                    {set.teamAScore} - {set.teamBScore}
+                  </Text>
+                  <Text className="text-xs font-medium text-green-700">
+                    {getSetWinner(set)} wins
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View className="mt-5 flex-1 flex-row gap-4">
+              {(["A", "B"] as Side[]).map((side) => (
+                <View
+                  key={side}
+                  className={cn(
+                    "flex-1 items-center justify-center p-3",
+                    highlightedWinner === side
+                      ? "border-green-600 bg-green-50"
+                      : highlightedWinner && "border-red-600 bg-red-50",
+                  )}
+                >
+                  <Text className="text-center text-5xl font-medium text-[#1a1a1a]">
+                    {score[side]}
+                  </Text>
+                  <Text className="mt-1 text-center text-xl font-medium text-[#1a1a1a]">
+                    {getSideName(side)}
+                  </Text>
+                  {getSidePlayers(side) && (
+                    <Text className="mt-0.5 text-center text-lg text-[#6b6b6b]">
+                      {getSidePlayers(side)}
+                    </Text>
+                  )}
+                  <Text className="mt-1 text-center text-sm text-[#6b6b6b]">
+                    Sets {setsWon[side]}
+                  </Text>
+                  <View className="mt-4 flex-row justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onPress={() => changeScore(side, -1)}
+                      accessibilityLabel={`Subtract point from ${getSideName(side)}`}
+                    >
+                      <Minus size={18} color="#1a1a1a" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onPress={() => changeScore(side, 1)}
+                      accessibilityLabel={`Add point to ${getSideName(side)}`}
+                    >
+                      <Plus size={18} color="#1a1a1a" />
+                    </Button>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {match.status === "concluded" ? (
+            <View className="mt-4 items-center">
+              <Text className="mb-3 text-center text-sm text-muted-foreground">
+                Match concluded. Scoring is disabled.
+              </Text>
+              <Button variant="outline" onPress={startRematch}>
+                <Text>Rematch</Text>
+              </Button>
+            </View>
+          ) : (
+            <View className="mt-4 flex-row items-center justify-between">
+              <Button variant="ghost" onPress={resetSet}>
+                <Text>Reset</Text>
+              </Button>
+              <Button variant="outline" onPress={endSet}>
+                <Text>End Set {setNumber}</Text>
+              </Button>
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#fafafa]">
-      <Stack.Screen
-        options={{
-          headerRight: () =>
-            match.status === "upcoming" ? (
-              <Pressable
-                onPress={() => router.push(`/quick/edit/${match.id}`)}
-                accessibilityLabel="Edit match"
-                hitSlop={8}
-              >
-                <Pencil size={20} color="#1a1a1a" />
-              </Pressable>
-            ) : null,
-        }}
+      <Stack.Screen options={{ headerShown: false }} />
+      <Header
+        title="Quick Match"
+        showBack
+        onBackPress={() => router.back()}
+        rightContent={
+          match.status !== "concluded" ? (
+            <MoreVertical size={22} color="#1a1a1a" />
+          ) : null
+        }
+        onRightPress={toggleMatchOptions}
       />
+      {isOptionsOpen && (
+        <View className="absolute right-5 top-20 z-50 min-w-[190px] bg-white p-1 shadow-md">
+          {match.status !== "concluded" && (
+            <Pressable
+              className="px-3 py-3"
+              onPress={() => {
+                setIsOptionsOpen(false);
+                void toggleLandscape();
+              }}
+            >
+              <Text className="text-sm text-[#1a1a1a]">
+                {isLandscape ? "Use portrait mode" : "Use landscape mode"}
+              </Text>
+            </Pressable>
+          )}
+          {match.status === "upcoming" && (
+            <Pressable
+              className="px-3 py-3"
+              onPress={() => {
+                setIsOptionsOpen(false);
+                router.push(`/quick/edit/${match.id}`);
+              }}
+            >
+              <Text className="text-sm text-[#1a1a1a]">Edit match</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       <View className="flex-1 px-5">
-        <View className="border border-[#1a1a1a] bg-white p-3 mt-8">
+        <View className="bg-white p-3 ">
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-3">
               <Text className="text-base font-semibold text-[#1a1a1a]">
@@ -271,7 +502,7 @@ export default function QuickMatchPlayScreen() {
             {setHistory.map((set) => (
               <View
                 key={set.setNumber}
-                className="flex-row items-center justify-between border border-[#1a1a1a] bg-white px-4 py-3"
+                className="flex-row items-center justify-between bg-white px-4 py-3"
               >
                 <Text className="text-sm text-[#1a1a1a]">
                   Set {set.setNumber}
@@ -298,11 +529,10 @@ export default function QuickMatchPlayScreen() {
                 <View
                   key={side}
                   className={cn(
-                    "flex-1 border bg-white p-3",
+                    "flex-1 bg-white p-3",
                     highlightedWinner === side
                       ? "border-green-600 bg-green-50"
                       : highlightedWinner && "border-red-600 bg-red-50",
-                    !highlightedWinner && "border-[#1a1a1a]",
                   )}
                 >
                   <Text className="text-center text-xl font-medium text-[#1a1a1a]">
@@ -360,7 +590,7 @@ export default function QuickMatchPlayScreen() {
             </View>
 
             <View className="mt-12 flex-row items-center justify-between">
-              <Button variant="ghost" onPress={resetSet}>
+              <Button variant="outline" onPress={resetSet}>
                 <Text>Reset</Text>
               </Button>
               <Button variant="outline" onPress={endSet}>
