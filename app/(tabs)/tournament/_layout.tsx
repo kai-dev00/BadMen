@@ -15,6 +15,10 @@ export default function TournamentLayout() {
           presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="match/[id]"
+        options={{ headerShown: true, title: "Tournament Match" }}
+      />
     </Stack>
   );
 }
