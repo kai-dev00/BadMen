@@ -1,4 +1,10 @@
-import { Minimize, Minus, MoreVertical, Plus } from "lucide-react-native";
+import {
+  ArrowLeftRight,
+  Minimize,
+  Minus,
+  MoreVertical,
+  Plus,
+} from "lucide-react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Stack, useNavigation, router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -55,6 +61,7 @@ export default function ScoringPlayScreen({
   const [isLandscape, setIsLandscape] = useState(false);
   const [isChangingOrientation, setIsChangingOrientation] = useState(false);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const [isSwapped, setIsSwapped] = useState(false);
 
   useEffect(() => {
     const history = initialSets;
@@ -69,10 +76,14 @@ export default function ScoringPlayScreen({
   }, [matchKey]);
 
   useEffect(() => {
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    void ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.PORTRAIT,
+    );
 
     return () => {
-      void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+      void ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT,
+      );
     };
   }, []);
 
@@ -122,32 +133,30 @@ export default function ScoringPlayScreen({
     setIsOptionsOpen((current) => !current);
   }
 
-  // function changeScore(side: ScoringSide, amount: number) {
-  //   setLastSetResult(null);
-  //   setScore((current) => ({
-  //     ...current,
-  //     [side]: Math.max(0, current[side] + amount),
-  //   }));
-  // }
-  function changeScore(side: ScoringSide, amount: number) {
-  if (amount > 0 && match) {
-    const other: ScoringSide = side === "A" ? "B" : "A";
-    const currentSide = score[side];
-    const currentOther = score[other];
-    const deuceStartsAt = Math.max(1, match.scoring - 1);
-    const isDeuce = currentSide >= deuceStartsAt && currentOther >= deuceStartsAt;
-
-    if (!isDeuce && currentSide + 1 > match.scoring) {
-      return;
-    }
+  function toggleSwapSides() {
+    setIsSwapped((current) => !current);
   }
 
-  setLastSetResult(null);
-  setScore((current) => ({
-    ...current,
-    [side]: Math.max(0, current[side] + amount),
-  }));
-}
+  function changeScore(side: ScoringSide, amount: number) {
+    if (amount > 0 && match) {
+      const other: ScoringSide = side === "A" ? "B" : "A";
+      const currentSide = score[side];
+      const currentOther = score[other];
+      const deuceStartsAt = Math.max(1, match.scoring - 1);
+      const isDeuce =
+        currentSide >= deuceStartsAt && currentOther >= deuceStartsAt;
+
+      if (!isDeuce && currentSide + 1 > match.scoring) {
+        return;
+      }
+    }
+
+    setLastSetResult(null);
+    setScore((current) => ({
+      ...current,
+      [side]: Math.max(0, current[side] + amount),
+    }));
+  }
 
   function resetSet() {
     setLastSetResult(null);
@@ -177,7 +186,10 @@ export default function ScoringPlayScreen({
     }
 
     if (score.A === score.B) {
-      Alert.alert("Set is tied", "One side must be ahead before ending the set.");
+      Alert.alert(
+        "Set is tied",
+        "One side must be ahead before ending the set.",
+      );
       return;
     }
 
@@ -281,29 +293,39 @@ export default function ScoringPlayScreen({
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
               <Text className="text-xl font-medium text-[#1a1a1a]">
-                {match.status === "concluded" ? "History" : `Set ${setNumber}`} |{" "}
-                {capitalize(match.matchType)}
+                {match.status === "concluded" ? "History" : `Set ${setNumber}`}{" "}
+                | {capitalize(match.matchType)}
               </Text>
             </View>
             {match.status !== "concluded" && (
-              <Pressable
-                onPress={toggleLandscape}
-                disabled={isChangingOrientation}
-                accessibilityRole="button"
-                accessibilityLabel="Use portrait mode"
-                accessibilityState={{
-                  busy: isChangingOrientation,
-                  checked: true,
-                }}
-                hitSlop={8}
-              >
-                <Minimize size={22} color="#1a1a1a" />
-              </Pressable>
+              <View className="flex-row items-center gap-4">
+                <Pressable
+                  onPress={toggleSwapSides}
+                  accessibilityRole="button"
+                  accessibilityLabel="Swap sides"
+                  hitSlop={8}
+                >
+                  <ArrowLeftRight size={22} color="#1a1a1a" />
+                </Pressable>
+                <Pressable
+                  onPress={toggleLandscape}
+                  disabled={isChangingOrientation}
+                  accessibilityRole="button"
+                  accessibilityLabel="Use portrait mode"
+                  accessibilityState={{
+                    busy: isChangingOrientation,
+                    checked: true,
+                  }}
+                  hitSlop={8}
+                >
+                  <Minimize size={22} color="#1a1a1a" />
+                </Pressable>
+              </View>
             )}
           </View>
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-xs capitalize text-[#8a8a8a]">
-              {match.bestOf} sets | up to {match.scoring}
+              best of {match.bestOf} | up to {match.scoring}
               {match.rematchNumber != null &&
                 match.rematchNumber > 0 &&
                 ` | Rematch #${match.rematchNumber}`}
@@ -311,7 +333,8 @@ export default function ScoringPlayScreen({
             {match.createdAt ? (
               <Text className="text-xs text-[#8a8a8a]">
                 {formatCreatedAt(match.createdAt)}
-                {match.endedAt && ` | ${formatCreatedAt(match.endedAt, "Ended")}`}
+                {match.endedAt &&
+                  ` | ${formatCreatedAt(match.endedAt, "Ended")}`}
               </Text>
             ) : null}
           </View>
@@ -337,16 +360,20 @@ export default function ScoringPlayScreen({
             </View>
           ) : (
             <View className="mt-5 flex-1 flex-row gap-4">
-              {(["A", "B"] as ScoringSide[]).map((side) => (
-                <View
-                  key={side}
-                  className={cn(
-                    "flex-1 items-center justify-center p-3",
-                    highlightedWinner === side
-                      ? "border-green-600 bg-green-50"
-                      : highlightedWinner && "border-red-600 bg-red-50",
-                  )}
-                >
+              {(isSwapped
+                ? (["B", "A"] as ScoringSide[])
+                : (["A", "B"] as ScoringSide[])
+              ).map((side) => (
+                // <View
+                //   key={side}
+                //   className={cn(
+                //     "flex-1 items-center justify-center p-3",
+                //     highlightedWinner === side
+                //       ? "border-green-600 bg-green-50"
+                //       : highlightedWinner && "border-red-600 bg-red-50",
+                //   )}
+                // >
+                <View key={side} className="flex-1 bg-white p-3">
                   <Text className="text-center text-5xl font-medium text-[#1a1a1a]">
                     {score[side]}
                   </Text>
@@ -478,7 +505,7 @@ export default function ScoringPlayScreen({
             </View>
           </View>
           <Text className="mt-1 text-xs capitalize text-[#8a8a8a]">
-            {match.matchType} | {match.bestOf} sets | up to {match.scoring}
+            {match.matchType} | best of {match.bestOf} | up to {match.scoring}
           </Text>
           {match.rematchNumber != null && match.rematchNumber > 0 ? (
             <Text className="mt-1 text-xs text-[#8a8a8a]">
@@ -543,12 +570,7 @@ export default function ScoringPlayScreen({
               {(["A", "B"] as ScoringSide[]).map((side) => (
                 <View
                   key={side}
-                  className={cn(
-                    "flex-1 bg-white p-3",
-                    highlightedWinner === side
-                      ? "border-green-600 bg-green-50"
-                      : highlightedWinner && "border-red-600 bg-red-50",
-                  )}
+                  className="flex-1 items-center justify-center p-3"
                 >
                   <Text className="text-center text-xl font-medium text-[#1a1a1a]">
                     {score[side]}
@@ -569,7 +591,7 @@ export default function ScoringPlayScreen({
                       Ready to end set
                     </Text>
                   ) : null}
-                  {lastSetResult && !currentWinner ? (
+                  {/* {lastSetResult && !currentWinner ? (
                     <Text
                       className={cn(
                         "mt-2 text-center text-xs font-medium",
@@ -581,7 +603,7 @@ export default function ScoringPlayScreen({
                       {lastSetResult.winner === side ? "Set won" : "Set lost"} (
                       {lastSetResult.score[side]})
                     </Text>
-                  ) : null}
+                  ) : null} */}
 
                   <View className="mt-4 flex-row justify-center gap-3">
                     <Button
@@ -613,6 +635,30 @@ export default function ScoringPlayScreen({
                 <Text>End Set {setNumber}</Text>
               </Button>
             </View>
+
+            {setHistory.length > 0 && (
+              <View className="mt-8 gap-3">
+                <Text className="text-center text-base font-medium text-[#1a1a1a]">
+                  Match history
+                </Text>
+                {setHistory.map((set) => (
+                  <View
+                    key={set.setNumber}
+                    className="flex-row items-center justify-between bg-white px-4 py-3"
+                  >
+                    <Text className="text-sm text-[#1a1a1a]">
+                      Set {set.setNumber}
+                    </Text>
+                    <Text className="text-base font-medium text-[#1a1a1a]">
+                      {set.teamAScore} - {set.teamBScore}
+                    </Text>
+                    <Text className="text-xs font-medium text-green-700">
+                      {getSetWinner(set)} wins
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </>
         )}
       </View>
