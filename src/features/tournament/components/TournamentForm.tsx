@@ -15,7 +15,7 @@ import {
   TournamentValues,
   tournamentSchema,
 } from "../types/tournamentSchema";
-import { CalendarCheck, ListOrdered, Shuffle, Swords, SwordsIcon, Target, Trophy, UserPlus, Users, Users2, X } from "lucide-react-native";
+import { Shuffle, SwordsIcon, Target, Trophy, UserPlus, Users, Users2, X } from "lucide-react-native";
 
 
 // Fields validated by trigger() before advancing from each step.
@@ -29,6 +29,8 @@ type TournamentFormProps = {
   onSubmit: (data: TournamentValues) => void | Promise<void>;
   defaultValues?: TournamentValues;
 };
+
+const STEP_LABELS = ["Details", "Format", "Players", "Review"] as const;
 
 export function TournamentForm({ onSubmit, defaultValues }: TournamentFormProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -69,24 +71,45 @@ export function TournamentForm({ onSubmit, defaultValues }: TournamentFormProps)
   }
 
   return (
-    <View className="flex-1 gap-5">
-      {step === 1 && (
-        <StepOne control={control} errors={errors} bestOf={bestOf} scoring={scoring} setValue={setValue} />
-      )}
+    <View className="flex-1">
+      <View className="gap-2 px-4 pb-3">
+        <View className="flex-row items-center justify-between">
+          <ButtonText className="text-sm font-semibold">Step {step} of 4</ButtonText>
+          <ButtonText className="text-sm text-muted-foreground">{STEP_LABELS[step - 1]}</ButtonText>
+        </View>
+        <View className="flex-row gap-1.5">
+          {STEP_LABELS.map((label, index) => (
+            <View
+              key={label}
+              className={cn("h-1.5 flex-1 rounded-full", index < step ? "bg-primary" : "bg-muted")}
+            />
+          ))}
+        </View>
+      </View>
 
-      {step === 2 && (
-        <StepTwo format={format} onChange={(value) => setValue("format", value)} error={errors.format?.message} />
-      )}
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 px-4 pb-32"
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
+        {step === 1 && (
+          <StepOne control={control} errors={errors} bestOf={bestOf} scoring={scoring} setValue={setValue} />
+        )}
 
-      {step === 3 && (
-        <StepThree players={players} setValue={setValue} error={errors.players?.message} />
-      )}
+        {step === 2 && (
+          <StepTwo format={format} onChange={(value) => setValue("format", value)} error={errors.format?.message} />
+        )}
 
-      {step === 4 && (
-        <StepFour values={watch()} />
-      )}
+        {step === 3 && (
+          <StepThree players={players} setValue={setValue} error={errors.players?.message} />
+        )}
 
-      <View className="flex-row gap-3">
+        {step === 4 && <StepFour values={watch()} />}
+      </ScrollView>
+
+      <View className="flex-row gap-3 border-t border-border bg-background px-4 py-3">
         {step > 1 && (
           <Button variant="outline" className="h-12 flex-1" onPress={goBack}>
             <ButtonText>Back</ButtonText>
@@ -94,17 +117,16 @@ export function TournamentForm({ onSubmit, defaultValues }: TournamentFormProps)
         )}
 
         {step < 4 ? (
-          <Button className="h-12 flex-1" variant="outline" onPress={goNext}>
-            <ButtonText>Next</ButtonText>
+          <Button className="h-12 flex-1" onPress={goNext}>
+            <ButtonText className="font-bold">Next</ButtonText>
           </Button>
         ) : (
           <Button
             className="h-12 flex-1"
-            variant="outline"
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
           >
-            <ButtonText>Confirm</ButtonText>
+            <ButtonText className="font-bold">Confirm</ButtonText>
           </Button>
         )}
       </View>
@@ -130,7 +152,7 @@ function StepOne({
   setValue: (name: "bestOf" | "scoring", value: number) => void;
 }) {
   return (
-    <View className="flex-1 gap-5">
+    <View className="gap-5">
       <Controller
         control={control}
         name="name"
@@ -334,10 +356,10 @@ function StepTwo({
 }) {
   const { foreground, mutedForeground } = useThemeColors();
   return (
-    <View className="flex-1 gap-4">
+    <View className="gap-4">
       <Text className="text-base font-medium text-foreground">Select game format</Text>
 
-      <View className="flex-1 flex-row flex-wrap gap-3">
+      <View className="flex-row flex-wrap gap-3">
         {FORMAT_OPTIONS.map((option) => {
           const selected = format === option.value;
           return (
@@ -433,7 +455,7 @@ function StepThree({
   }
 
   return (
-    <View className="flex-1 gap-4">
+    <View className="gap-4">
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-medium text-foreground">Player details</Text>
         <View className="flex-row items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
@@ -536,7 +558,7 @@ const MATCH_TYPE_LABELS: Record<TournamentValues["matchType"], string> = {
 function StepFour({ values }: { values: TournamentValues }) {
   const { mutedForeground } = useThemeColors();
   return (
-    <View className="flex-1 gap-4">
+    <View className="gap-4">
       <Text className="text-base font-medium text-foreground">Review</Text>
 
       <View className="gap-3 rounded-2xl border border-border bg-card p-4">

@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, Search, Trash2, X } from "lucide-react-native";
+import { AlertCircle, Plus, Search, Trash2, X, Zap } from "lucide-react-native";
 import Header from "../common/header";
 import CustomList from "@/components/ui/CustomList";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Fab } from "@/components/ui/fab";
 import { Input } from "@/components/ui/input";
-import MatchRow, { Match } from "./components/MatchRow";
+import MatchRow, { MATCH_ROW_HEIGHT, Match } from "./components/MatchRow";
 import { router } from "expo-router";
+import { safePush } from "@/src/hooks/safePush";
 import { useQuickMatches } from "./hooks/useQuickMatches";
+import { DATE_FILTER_OPTIONS, matchesDateFilter, type DateFilter } from "../common/dates";
 import FilterBar, {
   FilterRow,
   FilterToggleButton,
@@ -25,7 +29,7 @@ export default function QuickMatchScreen() {
   const [rematchOnly, setRematchOnly] = useState(false);
   const [bestOfFilter, setBestOfFilter] = useState<number | null>(null);
   const [scoringFilter, setScoringFilter] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7" | "30">(
+  const [dateFilter, setDateFilter] = useState<DateFilter>(
     "all",
   );
   const [showFilters, setShowFilters] = useState(false);
@@ -109,12 +113,7 @@ export default function QuickMatchScreen() {
           group: {
             key: "date",
             label: "Date",
-            options: [
-              { label: "All dates", value: "all" },
-              { label: "Today", value: "today" },
-              { label: "Last 7 days", value: "7" },
-              { label: "Last 30 days", value: "30" },
-            ],
+            options: DATE_FILTER_OPTIONS,
             selected: dateFilter,
             onChange: (value) =>
               setDateFilter((value ?? "all") as typeof dateFilter),
@@ -187,7 +186,7 @@ export default function QuickMatchScreen() {
       return;
     }
 
-    router.push(`/quick/${match.id}`);
+    safePush(`/quick/${match.id}`);
   }
 
   function handleLongPress(match: Match) {
@@ -223,44 +222,44 @@ export default function QuickMatchScreen() {
     );
   }
 
+
+  const selecting = selectedIds.size > 0;
+  const hasMatches = displayMatches.length > 0;
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <Header
-        title={
-          selectedIds.size > 0 ? `${selectedIds.size} selected` : "Quickey"
+        title={selecting ? `${selectedIds.size} selected` : "Quickey"}
+        subtitle={
+          selecting || !hasMatches
+            ? undefined
+            : `${displayMatches.length} match${displayMatches.length === 1 ? "" : "es"}`
         }
-        // rightContent={
-        //   selectedIds.size > 0 ? (
-        //     <Trash2 size={22} color="#b42318" />
-        //   ) : (
-        //     <Plus size={22} color="#1a1a1a" />
-        //   )
-        // }
-        rightContent={selectedIds.size > 0 ? <Trash2 size={22} /> : <Plus size={22} />}
-        rightVariant={selectedIds.size > 0 ? "destructive" : "default"}
-        onRightPress={
-          selectedIds.size > 0
-            ? handleDeleteSelected
-            : () => router.push("/quick/add")
-        }
+        onCancel={selecting ? () => setSelectedIds(new Set()) : undefined}
+        rightContent={selecting ? <Trash2 size={22} /> : undefined}
+        rightVariant="destructive"
+        rightAccessibilityLabel="Delete selected matches"
+        onRightPress={handleDeleteSelected}
       />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-muted-foreground">Loading matches...</Text>
+          <ActivityIndicator color={mutedForeground} />
         </View>
       ) : isError ? (
-        <View className="flex-1 items-center justify-center px-5">
-          <Text className="text-center text-destructive">
-            Could not load quick matches.
-          </Text>
-        </View>
-      ) : displayMatches.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-5">
-          <Text className="text-center text-muted-foreground">
-            No quick matches yet. Tap + to create one.
-          </Text>
-        </View>
+        <EmptyState
+          icon={AlertCircle}
+          title="Couldn't load matches"
+          subtitle="Something went wrong reading your matches. Restart the app and try again."
+        />
+      ) : !hasMatches ? (
+        <EmptyState
+          icon={Zap}
+          title="No quick matches yet"
+          subtitle="Start a casual game and track the score live."
+          actionLabel="New quick match"
+          onAction={() => safePush("/quick/add")}
+        />
       ) : (
         <View className="flex-1">
           <View className="px-4 pb-3">
@@ -276,12 +275,12 @@ export default function QuickMatchScreen() {
                 />
                 {search.length > 0 && (
                   <Pressable
-                    className="absolute right-2 top-1 h-8 w-8 items-center justify-center"
+                    className="absolute right-1 top-0 h-10 w-10 items-center justify-center"
                     onPress={() => setSearch("")}
                     accessibilityLabel="Clear search"
                     hitSlop={8}
                   >
-                  <X size={18} color={mutedForeground} />
+                    <X size={18} color={mutedForeground} />
                   </Pressable>
                 )}
               </View>
@@ -296,18 +295,17 @@ export default function QuickMatchScreen() {
           </View>
 
           {filteredMatches.length === 0 ? (
-            <View className="flex-1 items-center justify-center px-5">
-              <Text className="text-center text-muted-foreground">
-                No matches found for these filters.
-              </Text>
-            </View>
+            <EmptyState
+              icon={Search}
+              title="No matches found"
+              subtitle="Try a different search or clear the filters."
+            />
           ) : (
             <CustomList
+              className="mb-24"
               data={filteredMatches}
-              keyExtractor={(item, index) =>
-                `${item.id || "quick-match"}-${index}`
-              }
-              itemHeight={112}
+              keyExtractor={(item, index) => `${item.id || "quick-match"}-${index}`}
+              itemHeight={MATCH_ROW_HEIGHT}
               renderItem={(match) => (
                 <MatchRow
                   match={match}
@@ -320,26 +318,11 @@ export default function QuickMatchScreen() {
           )}
         </View>
       )}
+
+      {!isLoading && !isError && hasMatches && !selecting ? (
+        <Fab icon={Plus} onPress={() => safePush("/quick/add")} accessibilityLabel="New quick match" />
+      ) : null}
     </SafeAreaView>
   );
 }
 
-function matchesDateFilter(
-  value: string,
-  filter: "all" | "today" | "7" | "30",
-) {
-  if (filter === "all") return true;
-
-  const date = new Date(
-    value.includes("T") ? value : `${value.replace(" ", "T")}Z`,
-  );
-  if (Number.isNaN(date.getTime())) return false;
-
-  const now = new Date();
-  if (filter === "today") {
-    return date.toDateString() === now.toDateString();
-  }
-
-  const days = Number(filter);
-  return now.getTime() - date.getTime() <= days * 24 * 60 * 60 * 1000;
-}

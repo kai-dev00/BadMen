@@ -1,106 +1,83 @@
-// import React, { ReactNode } from "react";
-// import { ChevronLeft } from "lucide-react-native";
-// import { Text, TouchableOpacity, View } from "react-native";
-
-// interface HeaderProps {
-//   title: string;
-//   rightContent?: ReactNode;
-//   onRightPress?: () => void;
-//   showBack?: boolean;
-//   onBackPress?: () => void;
-// }
-
-// export default function Header({
-//   title,
-//   rightContent,
-//   onRightPress,
-//   showBack,
-//   onBackPress,
-// }: HeaderProps) {
-//   return (
-//     <View className="flex-row items-center justify-between px-5 py-3">
-//       <View className="flex-row items-center gap-3">
-//         {showBack && (
-//           <TouchableOpacity
-//             onPress={onBackPress}
-//             hitSlop={8}
-//             accessibilityRole="button"
-//             accessibilityLabel="Go back"
-//           >
-//             <ChevronLeft size={26} color="#1a1a1a" />
-//           </TouchableOpacity>
-//         )}
-//         <Text className="text-2xl font-bold text-[#1a1a1a]">{title}</Text>
-//       </View>
-
-//       {rightContent && (
-//         <TouchableOpacity onPress={onRightPress} hitSlop={8}>
-//           {rightContent}
-//         </TouchableOpacity>
-//       )}
-//     </View>
-//   );
-// }
 import React, { ReactNode, isValidElement, cloneElement } from "react";
-import { ChevronLeft } from "lucide-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ChevronLeft, X } from "lucide-react-native";
+import { View } from "react-native";
+import { IconButton } from "@/components/ui/icon-button";
+import { Text } from "@/components/ui/text";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 interface HeaderProps {
   title: string;
+  subtitle?: string;
   rightContent?: ReactNode;
+  /** Extra pre-built actions (e.g. several IconButtons) shown at the right, before `rightContent`. */
+  rightActions?: ReactNode;
   rightVariant?: "default" | "destructive";
   onRightPress?: () => void;
   rightAccessibilityLabel?: string;
   showBack?: boolean;
   onBackPress?: () => void;
+  /** When set, shows a cancel (X) button in place of back — used by selection mode. */
+  onCancel?: () => void;
 }
 
 export default function Header({
   title,
+  subtitle,
   rightContent,
+  rightActions,
   rightVariant = "default",
   onRightPress,
   rightAccessibilityLabel,
   showBack,
   onBackPress,
+  onCancel,
 }: HeaderProps) {
   const { foreground, destructive } = useThemeColors();
   const rightColor = rightVariant === "destructive" ? destructive : foreground;
 
-  const themedRightContent =
-    isValidElement(rightContent)
-      ? cloneElement(rightContent as React.ReactElement<{ color?: string }>, {
-          color: rightColor,
-        })
-      : rightContent;
+  const themedRightContent = isValidElement(rightContent)
+    ? cloneElement(rightContent as React.ReactElement<{ color?: string }>, {
+        color: rightColor,
+      })
+    : rightContent;
 
   return (
-    <View className="flex-row items-center justify-between px-5 py-3">
-      <View className="flex-row items-center gap-3">
-        {showBack && (
-          <TouchableOpacity
-            onPress={onBackPress}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
+    <View className="min-h-14 flex-row items-center justify-between gap-2 px-4 py-1.5">
+      <View className="flex-1 flex-row items-center gap-1">
+        {onCancel ? (
+          <IconButton onPress={onCancel} accessibilityLabel="Cancel selection" className="-ml-2">
+            <X size={24} color={foreground} />
+          </IconButton>
+        ) : showBack ? (
+          <IconButton onPress={onBackPress} accessibilityLabel="Go back" className="-ml-2">
             <ChevronLeft size={26} color={foreground} />
-          </TouchableOpacity>
-        )}
-        <Text className="text-2xl font-bold text-foreground">{title}</Text>
+          </IconButton>
+        ) : null}
+        <View className="flex-1">
+          <Text className="text-2xl font-bold" numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
-      {themedRightContent && (
-        <TouchableOpacity
-          onPress={onRightPress}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={rightAccessibilityLabel}
-        >
-          {themedRightContent}
-        </TouchableOpacity>
-      )}
+      {rightActions || themedRightContent ? (
+        <View className="-mr-2 flex-row items-center">
+          {rightActions}
+          {themedRightContent ? (
+            <IconButton
+              onPress={onRightPress}
+              accessibilityLabel={rightAccessibilityLabel ?? "Action"}
+            >
+              {themedRightContent}
+            </IconButton>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
