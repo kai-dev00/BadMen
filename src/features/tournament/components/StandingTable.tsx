@@ -36,7 +36,7 @@ export default function StandingsTable<T>({
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <View className="overflow-hidden rounded-xl border border-border bg-white">
+      <View className="overflow-hidden rounded-xl border border-border bg-card">
         <View className="flex-row items-center border-b border-border bg-muted px-4 py-3">
           <Text className="w-10 text-xs font-semibold uppercase text-muted-foreground">Rank</Text>
           <Text className="flex-1 text-xs font-semibold uppercase text-muted-foreground">

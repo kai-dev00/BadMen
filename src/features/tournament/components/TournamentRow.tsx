@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 import { CheckCircle2 } from "lucide-react-native";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export type TournamentStatus = "draft" | "upcoming" | "ongoing" | "concluded";
 export type TournamentFormat = "round_robin" | "single_elim" | "swiss" | "other";
@@ -34,6 +35,7 @@ export default function TournamentRow({
   onPress?: (tournament: TournamentListItem) => void;
   onLongPress?: (tournament: TournamentListItem) => void;
 }) {
+  const { foreground } = useThemeColors();
   const livePulse = useRef(new Animated.Value(0.35)).current;
 
   useEffect(() => {
@@ -66,34 +68,36 @@ export default function TournamentRow({
       activeOpacity={0.6}
       onPress={() => onPress?.(tournament)}
       onLongPress={() => onLongPress?.(tournament)}
-      className={`px-4 py-3 ${selected ? "bg-muted" : "bg-white"}`}
+      className={`h-28 flex-row items-center justify-between px-4 ${selected ? "bg-muted" : ""}`}
     >
-      <View className="flex-row items-center justify-between">
-        <Text className="flex-1 pr-3 text-base font-semibold text-[#1a1a1a]">
+      <View className="flex-1 pr-3">
+        <Text className="text-[15px] font-medium text-foreground">
           {tournament.name}
         </Text>
+        <Text className="mt-0.5 text-[11px] text-muted-foreground">
+          {FORMAT_LABELS[tournament.format]} | {tournament.playerCount} players
+        </Text>
+        <Text className="mt-0.5 text-[11px] text-muted-foreground capitalize">
+          {tournament.matchType} | BO{tournament.bestOf} | {tournament.scoring} points
+        </Text>
+      </View>
+      <View className="items-end">
         {selected ? (
-          <CheckCircle2 size={20} color="#1a1a1a" />
+          <CheckCircle2 size={20} color={foreground} />
         ) : tournament.status === "ongoing" ? (
           <View className="flex-row items-center">
             <Animated.View
-              className="mr-1 h-2 w-2 rounded-full bg-red-600"
+              className="mr-1 h-2 w-2 rounded-full bg-destructive"
               style={{ opacity: livePulse }}
             />
-            <Text className="text-[11px] font-medium text-red-600">Live</Text>
+            <Text className="text-[11px] font-medium text-destructive">Live</Text>
           </View>
         ) : (
-          <Text className="text-xs capitalize text-[#8a8a8a]">
+          <Text className="text-[11px] capitalize text-muted-foreground">
             {tournament.status}
           </Text>
         )}
       </View>
-      <Text className="mt-1 text-sm text-[#6b6b6b]">
-        {FORMAT_LABELS[tournament.format]} | {tournament.playerCount} players
-      </Text>
-      <Text className="mt-1 text-xs capitalize text-[#8a8a8a]">
-        {tournament.matchType} | BO{tournament.bestOf} | {tournament.scoring} points
-      </Text>
     </TouchableOpacity>
   );
 }

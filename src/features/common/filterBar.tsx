@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { ListFilter } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 /**
  * Generic chip-based filter row, shared between the Quick Match list and the
@@ -62,10 +63,10 @@ export function FilterChip({
     <Button
       variant="outline"
       size="sm"
-      className={cn("px-3", selected && "bg-muted")}
+      className={cn("px-3", selected && "border-primary bg-primary active:bg-primary/90")}
       onPress={onPress}
     >
-      <Text>{label}</Text>
+      <Text className={selected ? "text-primary-foreground" : "text-foreground"}>{label}</Text>
     </Button>
   );
 }
@@ -79,20 +80,22 @@ export function FilterToggleButton({
   expanded: boolean;
   onPress: () => void;
 }) {
+
+  const { foreground, primaryForeground } = useThemeColors();
   return (
-    <Pressable
+     <Pressable
       className={cn(
         "relative h-10 w-10 items-center justify-center rounded-md border border-border",
-        expanded && "bg-muted",
+        expanded && "border-primary bg-primary",
       )}
       onPress={onPress}
       accessibilityLabel={expanded ? "Hide filters" : "Show filters"}
       accessibilityState={{ expanded }}
     >
-      <ListFilter size={18} color="#1a1a1a" />
+      <ListFilter size={18} color={expanded ? primaryForeground : foreground} />
       {activeFilterCount > 0 && (
-        <View className="absolute -right-1 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1">
-          <Text className="text-[9px] font-bold text-white">{activeFilterCount}</Text>
+        <View className="absolute -right-1 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1">
+          <Text className="text-[9px] font-bold text-destructive-foreground">{activeFilterCount}</Text>
         </View>
       )}
     </Pressable>

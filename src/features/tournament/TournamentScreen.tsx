@@ -3,6 +3,7 @@ import { Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, Search, Trash2, X } from "lucide-react-native";
 import { router } from "expo-router";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 import Header from "../common/header";
 import CustomList from "@/components/ui/CustomList";
@@ -32,9 +33,12 @@ const STATUS_OPTIONS = [
 
 export default function TournamentScreen() {
   const { tournaments, isLoading, remove } = useTournaments();
+  const { mutedForeground } = useThemeColors();
 
   const [search, setSearch] = useState("");
-  const [matchTypeFilter, setMatchTypeFilter] = useState<"all" | "singles" | "doubles">("all");
+  const [matchTypeFilter, setMatchTypeFilter] = useState<
+    "all" | "singles" | "doubles"
+  >("all");
   const [bestOfFilter, setBestOfFilter] = useState<number | null>(null);
   const [scoringFilter, setScoringFilter] = useState<number | null>(null);
   const [formatFilter, setFormatFilter] = useState<string>("all");
@@ -64,7 +68,8 @@ export default function TournamentScreen() {
               { label: "Doubles", value: "doubles" },
             ],
             selected: matchTypeFilter,
-            onChange: (value) => setMatchTypeFilter((value ?? "all") as typeof matchTypeFilter),
+            onChange: (value) =>
+              setMatchTypeFilter((value ?? "all") as typeof matchTypeFilter),
           },
         },
       ],
@@ -77,7 +82,10 @@ export default function TournamentScreen() {
           group: {
             key: "bestOf",
             label: "Best of",
-            options: [1, 2, 3, 4, 5].map((value) => ({ label: `BO${value}`, value })),
+            options: [1, 2, 3, 4, 5].map((value) => ({
+              label: `BO${value}`,
+              value,
+            })),
             selected: bestOfFilter,
             onChange: setBestOfFilter,
             toggleOff: true,
@@ -88,7 +96,10 @@ export default function TournamentScreen() {
           group: {
             key: "scoring",
             label: "Scoring",
-            options: [8, 11, 21].map((value) => ({ label: String(value), value })),
+            options: [8, 11, 21].map((value) => ({
+              label: String(value),
+              value,
+            })),
             selected: scoringFilter,
             onChange: setScoringFilter,
             toggleOff: true,
@@ -128,35 +139,51 @@ export default function TournamentScreen() {
     },
   ];
 
-  const displayTournaments: TournamentListItem[] = tournaments.map((tournament) => ({
-    id: String(tournament.id),
-    name: tournament.name,
-    matchType: tournament.matchType,
-    bestOf: tournament.bestOf,
-    scoring: tournament.scoring,
-    format: tournament.format,
-    status: tournament.status,
-    playerCount: tournament.players.length,
-  }));
+  const displayTournaments: TournamentListItem[] = tournaments.map(
+    (tournament) => ({
+      id: String(tournament.id),
+      name: tournament.name,
+      matchType: tournament.matchType,
+      bestOf: tournament.bestOf,
+      scoring: tournament.scoring,
+      format: tournament.format,
+      status: tournament.status,
+      playerCount: tournament.players.length,
+    }),
+  );
 
   const filteredTournaments = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
     return displayTournaments.filter((tournament) => {
-      const searchableText = [tournament.name, tournament.matchType, tournament.format, tournament.status]
+      const searchableText = [
+        tournament.name,
+        tournament.matchType,
+        tournament.format,
+        tournament.status,
+      ]
         .join(" ")
         .toLowerCase();
 
       return (
         (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
-        (matchTypeFilter === "all" || tournament.matchType === matchTypeFilter) &&
+        (matchTypeFilter === "all" ||
+          tournament.matchType === matchTypeFilter) &&
         (bestOfFilter === null || tournament.bestOf === bestOfFilter) &&
         (scoringFilter === null || tournament.scoring === scoringFilter) &&
         (formatFilter === "all" || tournament.format === formatFilter) &&
         (statusFilter === "all" || tournament.status === statusFilter)
       );
     });
-  }, [bestOfFilter, displayTournaments, formatFilter, matchTypeFilter, scoringFilter, search, statusFilter]);
+  }, [
+    bestOfFilter,
+    displayTournaments,
+    formatFilter,
+    matchTypeFilter,
+    scoringFilter,
+    search,
+    statusFilter,
+  ]);
 
   function handlePress(tournament: TournamentListItem) {
     if (selectedIds.size > 0) {
@@ -201,28 +228,33 @@ export default function TournamentScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#fafafa]">
+    <SafeAreaView className="flex-1 bg-background">
       <Header
-        title={selectedIds.size > 0 ? `${selectedIds.size} selected` : "Tournament"}
+        title={
+          selectedIds.size > 0 ? `${selectedIds.size} selected` : "Tournament"
+        }
         rightContent={
           selectedIds.size > 0 ? (
-            <Trash2 size={22} color="#b42318" />
+            <Trash2 size={22} />
           ) : (
-            <Plus size={22} color="#1a1a1a" />
+            <Plus size={22} />
           )
         }
+        rightVariant={selectedIds.size > 0 ? "destructive" : "default"}
         onRightPress={
-          selectedIds.size > 0 ? handleDeleteSelected : () => router.push("/tournament/add")
+          selectedIds.size > 0
+            ? handleDeleteSelected
+            : () => router.push("/tournament/add")
         }
       />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-[#8a8a8a]">Loading tournaments...</Text>
+          <Text className="text-muted-foreground">Loading tournaments...</Text>
         </View>
       ) : displayTournaments.length === 0 ? (
         <View className="flex-1 items-center justify-center px-10">
-          <Text className="text-center text-[#8a8a8a]">
+          <Text className="text-center text-muted-foreground">
             No tournaments yet. Tap + to create one.
           </Text>
         </View>
@@ -246,7 +278,7 @@ export default function TournamentScreen() {
                     accessibilityLabel="Clear search"
                     hitSlop={8}
                   >
-                    <X size={18} color="#6b7280" />
+                    <X size={18} color={mutedForeground} />
                   </Pressable>
                 )}
               </View>
@@ -262,14 +294,16 @@ export default function TournamentScreen() {
 
           {filteredTournaments.length === 0 ? (
             <View className="flex-1 items-center justify-center px-5">
-              <Text className="text-center text-[#8a8a8a]">
+              <Text className="text-center text-muted-foreground">
                 No tournaments found for these filters.
               </Text>
             </View>
           ) : (
             <CustomList
               data={filteredTournaments}
-              keyExtractor={(item, index) => `${item.id || "tournament"}-${index}`}
+              keyExtractor={(item, index) =>
+                `${item.id || "tournament"}-${index}`
+              }
               itemHeight={96}
               renderItem={(tournament) => (
                 <TournamentRow

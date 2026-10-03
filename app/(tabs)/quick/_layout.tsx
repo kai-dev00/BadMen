@@ -17,7 +17,7 @@ export default function QuickLayout() {
       />
       <Stack.Screen
         name="edit/[id]"
-        options={{ title: "Edit Quick Match" }}
+        options={{ title: "Edit Quick Match", presentation: "modal",  }}
       />
     </Stack>
   );
