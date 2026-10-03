@@ -5,7 +5,8 @@ import {
   FieldErrors,
   useForm,
 } from "react-hook-form";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/text";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,22 +83,22 @@ export function QuickForm({
                 variant="outline"
                 className={cn(
                   "h-14 flex-1",
-                  value === "singles" && "bg-muted"
+                  value === "singles" && "border-primary bg-primary active:bg-primary/90"
                 )}
                 onPress={() => onChange("singles")}
               >
-                <Text>Singles</Text>
+                <Text className={value === "singles" ? "text-primary-foreground" : undefined}>Singles</Text>
               </Button>
 
               <Button
                 variant="outline"
                 className={cn(
                   "h-14 flex-1",
-                  value === "doubles" && "bg-muted"
+                  value === "doubles" && "border-primary bg-primary active:bg-primary/90"
                 )}
                 onPress={() => onChange("doubles")}
               >
-                <Text>Doubles</Text>
+                <Text className={value === "doubles" ? "text-primary-foreground" : undefined}>Doubles</Text>
               </Button>
             </View>
           )}
@@ -336,11 +337,11 @@ function OptionSelector({
             variant="outline"
             className={cn(
               "h-11 flex-1",
-              selectedValue === value && "bg-muted",
+              selectedValue === value && "border-primary bg-primary active:bg-primary/90",
             )}
             onPress={() => onChange(value)}
           >
-            <Text>{value}</Text>
+            <Text className={selectedValue === value ? "text-primary-foreground" : undefined}>{value}</Text>
           </Button>
         ))}
       </View>

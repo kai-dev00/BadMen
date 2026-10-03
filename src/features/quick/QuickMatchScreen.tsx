@@ -13,15 +13,21 @@ import FilterBar, {
   FilterToggleButton,
   countActiveFilters,
 } from "../common/filterBar";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export default function QuickMatchScreen() {
+  const { mutedForeground } = useThemeColors();
   const { matches, isLoading, isError, remove } = useQuickMatches();
   const [search, setSearch] = useState("");
-  const [matchTypeFilter, setMatchTypeFilter] = useState<"all" | "singles" | "doubles">("all");
+  const [matchTypeFilter, setMatchTypeFilter] = useState<
+    "all" | "singles" | "doubles"
+  >("all");
   const [rematchOnly, setRematchOnly] = useState(false);
   const [bestOfFilter, setBestOfFilter] = useState<number | null>(null);
   const [scoringFilter, setScoringFilter] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7" | "30">("all");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7" | "30">(
+    "all",
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -47,7 +53,8 @@ export default function QuickMatchScreen() {
               { label: "Doubles", value: "doubles" },
             ],
             selected: matchTypeFilter,
-            onChange: (value) => setMatchTypeFilter((value ?? "all") as typeof matchTypeFilter),
+            onChange: (value) =>
+              setMatchTypeFilter((value ?? "all") as typeof matchTypeFilter),
           },
         },
         {
@@ -69,7 +76,10 @@ export default function QuickMatchScreen() {
           group: {
             key: "bestOf",
             label: "Best of",
-            options: [1, 2, 3, 4, 5].map((value) => ({ label: `BO${value}`, value })),
+            options: [1, 2, 3, 4, 5].map((value) => ({
+              label: `BO${value}`,
+              value,
+            })),
             selected: bestOfFilter,
             onChange: setBestOfFilter,
             toggleOff: true,
@@ -80,7 +90,10 @@ export default function QuickMatchScreen() {
           group: {
             key: "scoring",
             label: "Scoring",
-            options: [8, 11, 21].map((value) => ({ label: String(value), value })),
+            options: [8, 11, 21].map((value) => ({
+              label: String(value),
+              value,
+            })),
             selected: scoringFilter,
             onChange: setScoringFilter,
             toggleOff: true,
@@ -103,7 +116,8 @@ export default function QuickMatchScreen() {
               { label: "Last 30 days", value: "30" },
             ],
             selected: dateFilter,
-            onChange: (value) => setDateFilter((value ?? "all") as typeof dateFilter),
+            onChange: (value) =>
+              setDateFilter((value ?? "all") as typeof dateFilter),
           },
         },
       ],
@@ -157,7 +171,15 @@ export default function QuickMatchScreen() {
         matchesDateFilter(match.createdAt, dateFilter)
       );
     });
-  }, [bestOfFilter, dateFilter, displayMatches, matchTypeFilter, rematchOnly, scoringFilter, search]);
+  }, [
+    bestOfFilter,
+    dateFilter,
+    displayMatches,
+    matchTypeFilter,
+    rematchOnly,
+    scoringFilter,
+    search,
+  ]);
 
   function handlePress(match: Match) {
     if (selectedIds.size > 0) {
@@ -193,9 +215,7 @@ export default function QuickMatchScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await Promise.all(
-              [...selectedIds].map((id) => remove(Number(id))),
-            );
+            await Promise.all([...selectedIds].map((id) => remove(Number(id))));
             setSelectedIds(new Set());
           },
         },
@@ -204,16 +224,20 @@ export default function QuickMatchScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#fafafa]">
+    <SafeAreaView className="flex-1 bg-background">
       <Header
-        title={selectedIds.size > 0 ? `${selectedIds.size} selected` : "Quickey"}
-        rightContent={
-          selectedIds.size > 0 ? (
-            <Trash2 size={22} color="#b42318" />
-          ) : (
-            <Plus size={22} color="#1a1a1a" />
-          )
+        title={
+          selectedIds.size > 0 ? `${selectedIds.size} selected` : "Quickey"
         }
+        // rightContent={
+        //   selectedIds.size > 0 ? (
+        //     <Trash2 size={22} color="#b42318" />
+        //   ) : (
+        //     <Plus size={22} color="#1a1a1a" />
+        //   )
+        // }
+        rightContent={selectedIds.size > 0 ? <Trash2 size={22} /> : <Plus size={22} />}
+        rightVariant={selectedIds.size > 0 ? "destructive" : "default"}
         onRightPress={
           selectedIds.size > 0
             ? handleDeleteSelected
@@ -257,7 +281,7 @@ export default function QuickMatchScreen() {
                     accessibilityLabel="Clear search"
                     hitSlop={8}
                   >
-                    <X size={18} color="#6b7280" />
+                  <X size={18} color={mutedForeground} />
                   </Pressable>
                 )}
               </View>
@@ -280,7 +304,9 @@ export default function QuickMatchScreen() {
           ) : (
             <CustomList
               data={filteredMatches}
-              keyExtractor={(item, index) => `${item.id || "quick-match"}-${index}`}
+              keyExtractor={(item, index) =>
+                `${item.id || "quick-match"}-${index}`
+              }
               itemHeight={112}
               renderItem={(match) => (
                 <MatchRow
@@ -304,7 +330,9 @@ function matchesDateFilter(
 ) {
   if (filter === "all") return true;
 
-  const date = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
+  const date = new Date(
+    value.includes("T") ? value : `${value.replace(" ", "T")}Z`,
+  );
   if (Number.isNaN(date.getTime())) return false;
 
   const now = new Date();

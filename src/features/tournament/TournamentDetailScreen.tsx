@@ -89,11 +89,11 @@ export default function TournamentDetailScreen() {
         title={tournament.name}
         showBack
         onBackPress={() => router.back()}
-        rightContent={canEdit ? <MoreVertical size={22} color="#1a1a1a" /> : null}
+        rightContent={canEdit ? <MoreVertical size={22} /> : null}
         onRightPress={toggleTournamentOptions}
       />
       {isOptionsOpen && (
-        <View className="absolute right-5 top-20 z-50 min-w-[190px] bg-white p-1 shadow-md">
+        <View className="absolute right-5 top-20 z-50 min-w-[190px] bg-card p-1 shadow-md">
           {canEdit && (
             <Pressable
               className="px-3 py-3"
@@ -102,7 +102,7 @@ export default function TournamentDetailScreen() {
                 router.push(`/tournament/edit/${tournament.id}`);
               }}
             >
-              <Text className="text-sm text-[#1a1a1a]">Edit tournament</Text>
+              <Text className="text-sm text-foreground">Edit tournament</Text>
             </Pressable>
           )}
         </View>

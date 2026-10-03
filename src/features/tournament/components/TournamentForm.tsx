@@ -2,10 +2,12 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Control, Controller, FieldErrors, useForm } from "react-hook-form";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { Text as ButtonText } from "@/components/ui/text";
 
 import { Button } from "@/components/ui/button";
 import { CustomInput } from "@/components/ui/CustomInput";
 import { cn } from "@/lib/utils";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 import {
   BEST_OF_OPTIONS,
@@ -87,13 +89,13 @@ export function TournamentForm({ onSubmit, defaultValues }: TournamentFormProps)
       <View className="flex-row gap-3">
         {step > 1 && (
           <Button variant="outline" className="h-12 flex-1" onPress={goBack}>
-            <Text>Back</Text>
+            <ButtonText>Back</ButtonText>
           </Button>
         )}
 
         {step < 4 ? (
           <Button className="h-12 flex-1" variant="outline" onPress={goNext}>
-            <Text>Next</Text>
+            <ButtonText>Next</ButtonText>
           </Button>
         ) : (
           <Button
@@ -102,7 +104,7 @@ export function TournamentForm({ onSubmit, defaultValues }: TournamentFormProps)
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
           >
-            <Text>Confirm</Text>
+            <ButtonText>Confirm</ButtonText>
           </Button>
         )}
       </View>
@@ -168,7 +170,7 @@ function StepOne({
         />
       </View>
 
-      <View className="rounded-2xl border border-border bg-white p-4 gap-4">
+      <View className="rounded-2xl border border-border bg-card p-4 gap-4">
         <View>
           <SectionLabel icon={Trophy} label="Best of (sets)" />
           <View className="flex-row gap-2">
@@ -213,9 +215,10 @@ function SectionLabel({
   icon: React.ComponentType<{ size?: number; color?: string }>;
   label: string;
 }) {
+  const { mutedForeground } = useThemeColors();
   return (
     <View className="mb-2 flex-row items-center gap-1.5">
-      <Icon size={14} color="#6b7280" />
+      <Icon size={14} color={mutedForeground} />
       <Text className="text-sm font-medium text-foreground">{label}</Text>
     </View>
   );
@@ -236,14 +239,21 @@ function MatchTypeCard({
     <Pressable
       onPress={onPress}
       className={cn(
-        "flex-1 items-center gap-1 rounded-2xl border bg-white py-5",
-        selected ? "border-foreground" : "border-border",
+        "flex-1 items-center gap-1 rounded-2xl border py-5",
+        selected ? "border-primary bg-primary" : "border-border bg-card",
       )}
     >
-      <Text className={cn("text-base font-semibold", selected ? "text-foreground" : "text-muted-foreground")}>
+      <Text className={cn("text-base font-semibold", selected ? "text-primary-foreground" : "text-muted-foreground")}>
         {label}
       </Text>
-      <Text className="text-xs text-muted-foreground">{sublabel}</Text>
+      <Text
+        className={cn(
+          "text-xs",
+          selected ? "text-primary-foreground/70" : "text-muted-foreground",
+        )}
+      >
+        {sublabel}
+      </Text>
     </Pressable>
   );
 }
@@ -261,11 +271,11 @@ function Chip({
     <Pressable
       onPress={onPress}
       className={cn(
-        "h-11 flex-1 items-center justify-center rounded-xl border bg-white",
-        selected ? "border-foreground" : "border-border",
+        "h-11 flex-1 items-center justify-center rounded-xl border",
+        selected ? "border-primary bg-primary" : "border-border bg-card",
       )}
     >
-      <Text className={cn("text-sm font-medium", selected ? "text-foreground" : "text-muted-foreground")}>
+      <Text className={cn("text-sm font-medium", selected ? "text-primary-foreground" : "text-muted-foreground")}>
         {label}
       </Text>
     </Pressable>
@@ -322,6 +332,7 @@ function StepTwo({
   onChange: (value: TournamentValues["format"]) => void;
   error?: string;
 }) {
+  const { foreground, mutedForeground } = useThemeColors();
   return (
     <View className="flex-1 gap-4">
       <Text className="text-base font-medium text-foreground">Select game format</Text>
@@ -336,7 +347,7 @@ function StepTwo({
               onPress={() => onChange(option.value)}
               className={cn(
                 "aspect-square w-[47%] justify-between rounded-2xl border p-4",
-                option.enabled ? "border-border bg-white" : "border-border bg-muted/40",
+                option.enabled ? "border-border bg-card" : "border-border bg-muted/40",
                 selected && option.enabled && "border-foreground",
               )}
             >
@@ -347,7 +358,7 @@ function StepTwo({
                     option.enabled ? "bg-muted" : "bg-transparent",
                   )}
                 >
-                  <option.icon size={18} color={option.enabled ? "#1a1a1a" : "#9ca3af"} />
+                  <option.icon size={18} color={option.enabled ? foreground : mutedForeground} />
                 </View>
                 {!option.enabled && (
                   <View className="rounded-full bg-muted px-2 py-0.5">
@@ -398,6 +409,7 @@ function StepThree({
   setValue: (name: "players", value: string[]) => void;
   error?: string;
 }) {
+  const { background, mutedForeground } = useThemeColors();
   const [draftName, setDraftName] = useState("");
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
@@ -425,14 +437,14 @@ function StepThree({
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-medium text-foreground">Player details</Text>
         <View className="flex-row items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-          <Users size={13} color="#6b7280" />
+          <Users size={13} color={mutedForeground} />
           <Text className="text-xs font-medium text-muted-foreground">
             {players.length} {players.length === 1 ? "player" : "players"}
           </Text>
         </View>
       </View>
 
-      <View className="flex-row items-center gap-2 rounded-xl border border-border bg-white px-1 py-1">
+      <View className="flex-row items-center gap-2 rounded-xl border border-border bg-card px-1 py-1">
         <View className="flex-1">
           <CustomInput
             value={draftName}
@@ -454,7 +466,7 @@ function StepThree({
             draftName.trim() ? "bg-foreground" : "bg-muted",
           )}
         >
-          <UserPlus size={18} color={draftName.trim() ? "#fff" : "#9ca3af"} />
+          <UserPlus size={18} color={draftName.trim() ? background : mutedForeground} />
         </Pressable>
       </View>
 
@@ -464,7 +476,7 @@ function StepThree({
 
       {players.length === 0 ? (
         <View className="items-center gap-2 rounded-xl border border-dashed border-border py-8">
-          <Users size={22} color="#9ca3af" />
+          <Users size={22} color={mutedForeground} />
           <Text className="text-sm text-muted-foreground">No players added yet</Text>
         </View>
       ) : (
@@ -477,7 +489,7 @@ function StepThree({
           {players.map((name, index) => (
             <View
               key={`${name}-${index}`}
-              className="flex-row items-center gap-3 rounded-xl border border-border bg-white px-3 py-2.5"
+              className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
             >
               <View
                 className="h-9 w-9 items-center justify-center rounded-full"
@@ -493,7 +505,7 @@ function StepThree({
                 hitSlop={8}
                 className="h-7 w-7 items-center justify-center rounded-full bg-muted"
               >
-                <X size={14} color="#6b7280" />
+                <X size={14} color={mutedForeground} />
               </Pressable>
             </View>
           ))}
@@ -522,11 +534,12 @@ const MATCH_TYPE_LABELS: Record<TournamentValues["matchType"], string> = {
 };
 
 function StepFour({ values }: { values: TournamentValues }) {
+  const { mutedForeground } = useThemeColors();
   return (
     <View className="flex-1 gap-4">
       <Text className="text-base font-medium text-foreground">Review</Text>
 
-      <View className="gap-3 rounded-2xl border border-border bg-white p-4">
+      <View className="gap-3 rounded-2xl border border-border bg-card p-4">
         <View>
           <Text className="text-lg font-semibold text-foreground">
             {values.name || "Untitled Tournament"}
@@ -547,7 +560,7 @@ function StepFour({ values }: { values: TournamentValues }) {
         <View className="flex-row items-center justify-between">
           <Text className="text-sm font-medium text-foreground">Players</Text>
           <View className="flex-row items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-            <Users size={13} color="#6b7280" />
+            <Users size={13} color={mutedForeground} />
             <Text className="text-xs font-medium text-muted-foreground">
               {values.players.length} {values.players.length === 1 ? "player" : "players"}
             </Text>
@@ -563,7 +576,7 @@ function StepFour({ values }: { values: TournamentValues }) {
           {values.players.map((name, index) => (
             <View
               key={`${name}-${index}`}
-              className="flex-row items-center gap-3 rounded-xl border border-border bg-white px-3 py-2.5"
+              className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
             >
               <View
                 className="h-9 w-9 items-center justify-center rounded-full"

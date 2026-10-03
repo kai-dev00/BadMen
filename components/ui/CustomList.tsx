@@ -1,13 +1,18 @@
 import React, { ReactElement } from "react";
-import { FlatList, View } from "react-native";
+import { FlatList, FlatListProps, View } from "react-native";
+import { cn } from "@/lib/utils";
 
 interface ListProps<T> {
   data: T[];
   renderItem: (item: T) => ReactElement;
   keyExtractor: (item: T, index: number) => string;
-  onItemPress?: (item: T) => void;
   itemHeight?: number;
+  /** Draws the card border. Default true. */
   bordered?: boolean;
+  className?: string;
+  ListEmptyComponent?: FlatListProps<T>["ListEmptyComponent"];
+  refreshControl?: FlatListProps<T>["refreshControl"];
+  contentContainerClassName?: string;
 }
 
 export default function CustomList<T>({
@@ -16,18 +21,27 @@ export default function CustomList<T>({
   keyExtractor,
   itemHeight,
   bordered = true,
+  className,
+  ListEmptyComponent,
+  refreshControl,
+  contentContainerClassName,
 }: ListProps<T>) {
   return (
     <View
-      className={`mx-4 flex-1 overflow-hidden rounded-2xl ${
-        bordered ? "" : ""
-      }`}
+      className={cn(
+        "mx-4 flex-1 overflow-hidden rounded-2xl bg-card",
+        bordered && "border border-border",
+        className,
+      )}
     >
       <FlatList
         data={data}
         keyExtractor={keyExtractor}
         renderItem={({ item }) => renderItem(item)}
-        ItemSeparatorComponent={() => <View className="mx-4 h-px bg-[#e5e5e5]" />}
+        ItemSeparatorComponent={() => <View className="mx-4 h-px bg-border" />}
+        ListEmptyComponent={ListEmptyComponent}
+        refreshControl={refreshControl}
+        contentContainerClassName={contentContainerClassName}
         showsVerticalScrollIndicator={false}
         getItemLayout={
           itemHeight
@@ -42,15 +56,3 @@ export default function CustomList<T>({
     </View>
   );
 }
-
-
-// import PlayScreen from "@/src/features/play/PlayScreen";
-// import QuickScreen from "@/src/features/quick/QuickScreen";
-// import { ScrollView, Text } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
-
-// export default function QuickPage() {
-//   return (
-//     <QuickScreen />
-//   );
-// }
