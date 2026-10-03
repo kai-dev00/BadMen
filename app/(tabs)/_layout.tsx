@@ -1,60 +1,30 @@
-// import { Tabs } from "expo-router";
-// import {
-//   ChartColumn,
-//   House,
-//   Settings,
-//   Soup,
-//   Trophy,
-//   UtensilsCrossed,
-//   Zap,
-// } from "lucide-react-native";
-// import Quick from "./quick";
-
-// export default function TabsLayout() {
-//   return (
-//     <Tabs
-//       screenOptions={{
-//         headerShown: false,
-//       }}
-//     >
-//       <Tabs.Screen
-//         name="index"
-//         options={{
-//           title: "Home",
-//           tabBarIcon: ({ size, color }) => <House size={size} color={color} />,
-//         }}
-//       />
-
-//       <Tabs.Screen
-//         name="tournament"
-//         options={{
-//           title: "Tournament",
-//           tabBarIcon: ({ size, color }) => <Trophy size={size} color={color} />,
-//         }}
-//       />
-
-//       <Tabs.Screen
-//         name="quick"
-//         options={{
-//           title: "Quick",
-//           tabBarIcon: ({ size, color }) => <Zap size={size} color={color} />,
-//         }}
-//       />
-//     </Tabs>
-//   );
-// }
-
 import { Tabs } from "expo-router";
-import {
-  ChartColumn,
-  House,
-  Settings,
-  Soup,
-  Trophy,
-  UtensilsCrossed,
-  Zap,
-} from "lucide-react-native";
+import { View } from "react-native";
+import { House, Trophy, Zap, type LucideIcon } from "lucide-react-native";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+
+function TabIcon({
+  icon: IconComponent,
+  focused,
+  color,
+  size,
+}: {
+  icon: LucideIcon;
+  focused: boolean;
+  color: string;
+  size: number;
+}) {
+  const { primary, primaryForeground } = useThemeColors();
+
+  return (
+    <View
+      className="h-8 w-14 items-center justify-center rounded-full"
+      style={{ backgroundColor: focused ? primary : "transparent" }}
+    >
+      <IconComponent size={size - 2} color={focused ? primaryForeground : color} />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const { foreground, mutedForeground, card, border, background } = useThemeColors();
@@ -66,9 +36,11 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: background },
         tabBarActiveTintColor: foreground,
         tabBarInactiveTintColor: mutedForeground,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         tabBarStyle: {
           backgroundColor: card,
           borderTopColor: border,
+          borderTopWidth: 1,
         },
       }}
     >
@@ -76,23 +48,31 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ size, color }) => <House size={size} color={color} />,
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabIcon icon={House} focused={focused} color={color} size={size} />
+          ),
         }}
       />
 
       <Tabs.Screen
         name="tournament"
         options={{
+          popToTopOnBlur: true,
           title: "Tournament",
-          tabBarIcon: ({ size, color }) => <Trophy size={size} color={color} />,
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabIcon icon={Trophy} focused={focused} color={color} size={size} />
+          ),
         }}
       />
 
       <Tabs.Screen
         name="quick"
         options={{
+          popToTopOnBlur: true,
           title: "Quick",
-          tabBarIcon: ({ size, color }) => <Zap size={size} color={color} />,
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabIcon icon={Zap} focused={focused} color={color} size={size} />
+          ),
         }}
       />
     </Tabs>

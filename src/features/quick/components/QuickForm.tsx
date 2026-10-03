@@ -5,7 +5,9 @@ import {
   FieldErrors,
   useForm,
 } from "react-hook-form";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Card } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Text } from "@/components/ui/text";
 
 import { Button } from "@/components/ui/button";
@@ -67,91 +69,70 @@ export function QuickForm({
   const scoring = watch("scoring");
 
   return (
-    <View className="gap-5">
-      {/* Match Type */}
-      <View>
-        <Text className="mb-3 text-base text-foreground">
-          Match Type
-        </Text>
-
-        <Controller
-          control={control}
-          name="matchType"
-          render={({ field: { value, onChange } }) => (
-            <View className="flex-row gap-4">
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-14 flex-1",
-                  value === "singles" && "border-primary bg-primary active:bg-primary/90"
-                )}
-                onPress={() => onChange("singles")}
-              >
-                <Text className={value === "singles" ? "text-primary-foreground" : undefined}>Singles</Text>
-              </Button>
-
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-14 flex-1",
-                  value === "doubles" && "border-primary bg-primary active:bg-primary/90"
-                )}
-                onPress={() => onChange("doubles")}
-              >
-                <Text className={value === "doubles" ? "text-primary-foreground" : undefined}>Doubles</Text>
-              </Button>
-            </View>
-          )}
-        />
-      </View>
-
-      {/* Divider */}
-      <View className="h-px bg-border" />
-
-      <View className="gap-4">
-        <OptionSelector
-          label="Best of (sets)"
-          values={[1, 2, 3, 4, 5]}
-          selectedValue={bestOf}
-          onChange={(value) => setValue("bestOf", value)}
-        />
-
-        <Text className="text-sm text-muted-foreground">
-          First to {bestOf} wins (maximum {bestOf * 2 - 1} games)
-        </Text>
-
-        <OptionSelector
-          label="Scoring"
-          values={[8, 11, 21]}
-          selectedValue={scoring}
-          onChange={(value) => setValue("scoring", value)}
-        />
-      </View>
-
-      <View className="h-px bg-border" />
-
-      {/* Players */}
-      {matchType === "singles" ? (
-        <SinglesForm
-          control={control}
-          errors={errors}
-        />
-      ) : (
-        <DoublesForm
-          control={control}
-          errors={errors}
-        />
-      )}
-
-      {/* Start */}
-      <Button
-        className="mt-2 h-12"
-        variant="outline"
-        onPress={handleSubmit(onSubmit)}
-        disabled={isSubmitting}
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-4 px-4 pb-32"
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
       >
-        <Text>Start</Text>
-      </Button>
+        <Card className="gap-3 p-4">
+          <Text className="text-sm font-semibold">Match type</Text>
+          <Controller
+            control={control}
+            name="matchType"
+            render={({ field: { value, onChange } }) => (
+              <SegmentedControl
+                options={[
+                  { label: "Singles", value: "singles" },
+                  { label: "Doubles", value: "doubles" },
+                ]}
+                value={value}
+                onChange={onChange}
+              />
+            )}
+          />
+        </Card>
+
+        <Card className="gap-4 p-4">
+          <OptionSelector
+            label="Best of (sets)"
+            values={[1, 2, 3, 4, 5]}
+            selectedValue={bestOf}
+            onChange={(value) => setValue("bestOf", value)}
+          />
+
+          <Text className="-mt-2 text-xs text-muted-foreground">
+            First to {bestOf} wins (maximum {bestOf * 2 - 1} games)
+          </Text>
+
+          <View className="h-px bg-border" />
+
+          <OptionSelector
+            label="Scoring"
+            values={[8, 11, 21]}
+            selectedValue={scoring}
+            onChange={(value) => setValue("scoring", value)}
+          />
+        </Card>
+
+        {matchType === "singles" ? (
+          <Card className="gap-4 p-4">
+            <Text className="text-sm font-semibold">Players</Text>
+            <SinglesForm control={control} errors={errors} />
+          </Card>
+        ) : (
+          <DoublesForm control={control} errors={errors} />
+        )}
+      </ScrollView>
+
+      <View className="border-t border-border bg-background px-4 py-3">
+        <Button className="h-12" onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
+          <Text className="font-bold">Start match</Text>
+        </Button>
+      </View>
     </View>
   );
 }
@@ -208,9 +189,9 @@ export function DoublesForm({
   errors,
 }: DoublesFormProps) {
   return (
-    <View className="gap-5 ">
+    <View className="gap-4">
       {/* Team A */}
-      <View>
+      <Card className="p-4">
         <Controller
           control={control}
           name="teamAName"
@@ -257,10 +238,10 @@ export function DoublesForm({
             )}
           />
         </View>
-      </View>
+      </Card>
 
       {/* Team B */}
-      <View>
+      <Card className="p-4">
         <Controller
           control={control}
           name="teamBName"
@@ -307,7 +288,7 @@ export function DoublesForm({
             )}
           />
         </View>
-      </View>
+      </Card>
     </View>
   );
 }

@@ -1,4 +1,7 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Trophy } from "lucide-react-native";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 
 export type StandingsColumn<T> = {
@@ -27,18 +30,14 @@ export default function StandingsTable<T>({
   emptyLabel = "No standings yet.",
 }: StandingsTableProps<T>) {
   if (rows.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center px-10">
-        <Text className="text-center text-muted-foreground">{emptyLabel}</Text>
-      </View>
-    );
+    return <EmptyState icon={Trophy} title={emptyLabel} />;
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <View className="overflow-hidden rounded-xl border border-border bg-card">
+    <ScrollView contentContainerClassName="px-4 pb-8">
+      <View className="overflow-hidden rounded-2xl border border-border bg-card">
         <View className="flex-row items-center border-b border-border bg-muted px-4 py-3">
-          <Text className="w-10 text-xs font-semibold uppercase text-muted-foreground">Rank</Text>
+          <Text className="w-9 text-xs font-semibold uppercase text-muted-foreground">#</Text>
           <Text className="flex-1 text-xs font-semibold uppercase text-muted-foreground">
             {labelHeader}
           </Text>
@@ -57,31 +56,59 @@ export default function StandingsTable<T>({
           ))}
         </View>
 
-        {rows.map((row, index) => (
-          <View
-            key={keyExtractor(row)}
-            className={cn(
-              "flex-row items-center px-4 py-3",
-              index !== rows.length - 1 && "border-b border-border",
-            )}
-          >
-            <Text className="w-10 text-sm font-medium text-foreground">{index + 1}</Text>
-            <Text className="flex-1 text-sm font-medium text-foreground">{labelColumn(row)}</Text>
-            {columns.map((column) => (
+        {rows.map((row, index) => {
+          const leader = index === 0;
+          return (
+            <View
+              key={keyExtractor(row)}
+              className={cn(
+                "flex-row items-center px-4 py-3",
+                leader && "bg-tonal-surface",
+                index !== rows.length - 1 && "border-b border-border",
+              )}
+            >
+              <View className="w-9">
+                <View
+                  className={cn(
+                    "h-6 w-6 items-center justify-center rounded-full",
+                    leader ? "bg-primary" : "bg-muted",
+                  )}
+                >
+                  <Text
+                    className={cn(
+                      "text-xs font-bold",
+                      leader ? "text-primary-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {index + 1}
+                  </Text>
+                </View>
+              </View>
               <Text
-                key={column.key}
-                style={column.width ? { width: column.width } : undefined}
-                className={cn(
-                  "text-sm text-muted-foreground",
-                  column.align === "right" ? "text-right" : "text-left",
-                  !column.width && "flex-1",
-                )}
+                className={cn("flex-1 text-sm", leader ? "font-bold" : "font-medium")}
+                numberOfLines={1}
               >
-                {column.render(row, index + 1)}
+                {labelColumn(row)}
               </Text>
-            ))}
-          </View>
-        ))}
+              {columns.map((column) => (
+                <Text
+                  key={column.key}
+                  style={{
+                    ...(column.width ? { width: column.width } : null),
+                    fontVariant: ["tabular-nums"],
+                  }}
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    column.align === "right" ? "text-right" : "text-left",
+                    !column.width && "flex-1",
+                  )}
+                >
+                  {column.render(row, index + 1)}
+                </Text>
+              ))}
+            </View>
+          );
+        })}
       </View>
     </ScrollView>
   );

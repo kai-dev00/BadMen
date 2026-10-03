@@ -1,15 +1,22 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, Search, Trash2, X } from "lucide-react-native";
+import { AlertCircle, Plus, Search, Trash2, Trophy, X } from "lucide-react-native";
 import { router } from "expo-router";
+import { safePush } from "@/src/hooks/safePush";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 import Header from "../common/header";
 import CustomList from "@/components/ui/CustomList";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Fab } from "@/components/ui/fab";
 import { Input } from "@/components/ui/input";
-import TournamentRow, { TournamentListItem } from "./components/TournamentRow";
+import TournamentRow, {
+  TOURNAMENT_ROW_HEIGHT,
+  TournamentListItem,
+} from "./components/TournamentRow";
 import { useTournaments } from "./hooks/useTournaments";
+import { DATE_FILTER_OPTIONS, matchesDateFilter, type DateFilter } from "../common/dates";
 import FilterBar, {
   FilterRow,
   FilterToggleButton,
@@ -43,6 +50,7 @@ export default function TournamentScreen() {
   const [scoringFilter, setScoringFilter] = useState<number | null>(null);
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -52,6 +60,7 @@ export default function TournamentScreen() {
     scoringFilter,
     formatFilter,
     statusFilter,
+    dateFilter,
   ]);
 
   const filterRows: FilterRow[] = [
@@ -137,6 +146,21 @@ export default function TournamentScreen() {
         },
       ],
     },
+    {
+      key: "date-row",
+      items: [
+        {
+          type: "group",
+          group: {
+            key: "date",
+            label: "Date",
+            options: DATE_FILTER_OPTIONS,
+            selected: dateFilter,
+            onChange: (value) => setDateFilter((value ?? "all") as DateFilter),
+          },
+        },
+      ],
+    },
   ];
 
   const displayTournaments: TournamentListItem[] = tournaments.map(
@@ -149,6 +173,8 @@ export default function TournamentScreen() {
       format: tournament.format,
       status: tournament.status,
       playerCount: tournament.players.length,
+      createdAt: tournament.createdAt,
+      updatedAt: tournament.updatedAt,
     }),
   );
 
@@ -172,11 +198,13 @@ export default function TournamentScreen() {
         (bestOfFilter === null || tournament.bestOf === bestOfFilter) &&
         (scoringFilter === null || tournament.scoring === scoringFilter) &&
         (formatFilter === "all" || tournament.format === formatFilter) &&
-        (statusFilter === "all" || tournament.status === statusFilter)
+        (statusFilter === "all" || tournament.status === statusFilter) &&
+        matchesDateFilter(tournament.createdAt, dateFilter)
       );
     });
   }, [
     bestOfFilter,
+    dateFilter,
     displayTournaments,
     formatFilter,
     matchTypeFilter,
@@ -191,7 +219,7 @@ export default function TournamentScreen() {
       return;
     }
 
-    router.push(`/tournament/${tournament.id}`);
+    safePush(`/tournament/${tournament.id}`);
   }
 
   function handleLongPress(tournament: TournamentListItem) {
@@ -227,37 +255,38 @@ export default function TournamentScreen() {
     );
   }
 
+
+  const selecting = selectedIds.size > 0;
+  const hasTournaments = displayTournaments.length > 0;
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <Header
-        title={
-          selectedIds.size > 0 ? `${selectedIds.size} selected` : "Tournament"
+        title={selecting ? `${selectedIds.size} selected` : "Tournament"}
+        subtitle={
+          selecting || !hasTournaments
+            ? undefined
+            : `${displayTournaments.length} tournament${displayTournaments.length === 1 ? "" : "s"}`
         }
-        rightContent={
-          selectedIds.size > 0 ? (
-            <Trash2 size={22} />
-          ) : (
-            <Plus size={22} />
-          )
-        }
-        rightVariant={selectedIds.size > 0 ? "destructive" : "default"}
-        onRightPress={
-          selectedIds.size > 0
-            ? handleDeleteSelected
-            : () => router.push("/tournament/add")
-        }
+        onCancel={selecting ? () => setSelectedIds(new Set()) : undefined}
+        rightContent={selecting ? <Trash2 size={22} /> : undefined}
+        rightVariant="destructive"
+        rightAccessibilityLabel="Delete selected tournaments"
+        onRightPress={handleDeleteSelected}
       />
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-muted-foreground">Loading tournaments...</Text>
+          <ActivityIndicator color={mutedForeground} />
         </View>
-      ) : displayTournaments.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-10">
-          <Text className="text-center text-muted-foreground">
-            No tournaments yet. Tap + to create one.
-          </Text>
-        </View>
+      ) : !hasTournaments ? (
+        <EmptyState
+          icon={Trophy}
+          title="No tournaments yet"
+          subtitle="Create a round-robin tournament and run every match from one place."
+          actionLabel="New tournament"
+          onAction={() => safePush("/tournament/add")}
+        />
       ) : (
         <View className="flex-1">
           <View className="px-4 pb-3">
@@ -273,7 +302,7 @@ export default function TournamentScreen() {
                 />
                 {search.length > 0 && (
                   <Pressable
-                    className="absolute right-2 top-1 h-8 w-8 items-center justify-center"
+                    className="absolute right-1 top-0 h-10 w-10 items-center justify-center"
                     onPress={() => setSearch("")}
                     accessibilityLabel="Clear search"
                     hitSlop={8}
@@ -293,18 +322,17 @@ export default function TournamentScreen() {
           </View>
 
           {filteredTournaments.length === 0 ? (
-            <View className="flex-1 items-center justify-center px-5">
-              <Text className="text-center text-muted-foreground">
-                No tournaments found for these filters.
-              </Text>
-            </View>
+            <EmptyState
+              icon={AlertCircle}
+              title="No tournaments found"
+              subtitle="Try a different search or clear the filters."
+            />
           ) : (
             <CustomList
+              className="mb-24"
               data={filteredTournaments}
-              keyExtractor={(item, index) =>
-                `${item.id || "tournament"}-${index}`
-              }
-              itemHeight={96}
+              keyExtractor={(item, index) => `${item.id || "tournament"}-${index}`}
+              itemHeight={TOURNAMENT_ROW_HEIGHT}
               renderItem={(tournament) => (
                 <TournamentRow
                   tournament={tournament}
@@ -317,6 +345,14 @@ export default function TournamentScreen() {
           )}
         </View>
       )}
+
+      {!isLoading && hasTournaments && !selecting ? (
+        <Fab
+          icon={Plus}
+          onPress={() => safePush("/tournament/add")}
+          accessibilityLabel="New tournament"
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

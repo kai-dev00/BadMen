@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { KeyboardAvoidingView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTournaments } from "./hooks/useTournaments";
 import { TournamentValues } from "./types/tournamentSchema";
@@ -49,9 +49,9 @@ export default function EditTournamentScreen() {
       <Header title="Edit Tournament" showBack onBackPress={() => router.back()} />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
       >
-        <View className="flex-1 p-5 pb-20">
+        <View className="flex-1">
           <TournamentForm onSubmit={handleUpdate} defaultValues={initialValues} />
         </View>
       </KeyboardAvoidingView>

@@ -1,47 +1,42 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { MoreVertical } from "lucide-react-native";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { formatListDate } from "../common/dates";
+import { safePush } from "@/src/hooks/safePush";
+import { ChevronRight, Pencil, Trophy, Radio, CheckCircle2, Play, Hourglass } from "lucide-react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Header from "../common/header";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 import { useBracket, useStandings, useTournament } from "./hooks/useTournaments";
-import { Bracket, BracketMatch, BracketTeam, StandingsRow } from "../../database/repositories/TournamentRepository";
+import { BracketMatch, StandingsRow } from "../../database/repositories/TournamentRepository";
 import StandingsTable, { StandingsColumn } from "./components/StandingTable";
+import { FORMAT_LABELS, TournamentStatusBadge } from "./components/TournamentRow";
 
 type Tab = "bracket" | "standings";
 
-// type StandingsRow = {
-//   teamId: number;
-//   name: string;
-//   wins: number;
-//   losses: number;
-//   ties: number;
-//   played: number;
-// };
+const TAB_OPTIONS: { label: string; value: Tab }[] = [
+  { label: "Bracket", value: "bracket" },
+  { label: "Standings", value: "standings" },
+];
 
 export default function TournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = id ? Number(id) : undefined;
+  const { mutedForeground, primaryForeground } = useThemeColors();
 
   const { data: tournament, isLoading: isLoadingTournament } = useTournament(tournamentId);
   const { data: bracket, isLoading: isLoadingBracket } = useBracket(tournamentId);
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("bracket");
 
-  // const standings = useMemo(() => (bracket ? buildStandings(bracket) : []), [bracket]);
   const { data: standings = [] } = useStandings(tournamentId);
 
-  // const standingsColumns: StandingsColumn<StandingsRow>[] = [
-  //   {
-  //     key: "record",
-  //     label: "W-L-T",
-  //     align: "right",
-  //     width: 96,
-  //     render: (row) => `${row.wins} - ${row.losses} - ${row.ties}`,
-  //   },
-  // ];
   const standingsColumns: StandingsColumn<StandingsRow>[] = [
     {
       key: "record",
@@ -59,22 +54,19 @@ export default function TournamentDetailScreen() {
     },
   ];
 
-  function toggleTournamentOptions() {
-    setIsOptionsOpen((current) => !current);
-  }
-
   if (isLoadingTournament || isLoadingBracket) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted-foreground">Loading...</Text>
+        <ActivityIndicator color={mutedForeground} />
       </SafeAreaView>
     );
   }
 
   if (!tournament) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted-foreground">Tournament not found.</Text>
+      <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+        <Header title="Tournament" showBack onBackPress={() => router.back()} />
+        <EmptyState icon={Trophy} title="Tournament not found" />
       </SafeAreaView>
     );
   }
@@ -82,56 +74,81 @@ export default function TournamentDetailScreen() {
   const canEdit = tournament.status === "draft" || tournament.status === "upcoming";
   const hasBracket = Boolean(bracket && bracket.rounds.length > 0);
 
+  const allMatches = bracket?.rounds.flat() ?? [];
+  const playedCount = allMatches.filter((match) => match.status === "concluded").length;
+  const progress = allMatches.length > 0 ? playedCount / allMatches.length : 0;
+  const champion = tournament.status === "concluded" ? standings[0] : undefined;
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <Header
         title={tournament.name}
+        subtitle={`${FORMAT_LABELS[tournament.format]} · ${tournament.players.length} players`}
         showBack
         onBackPress={() => router.back()}
-        rightContent={canEdit ? <MoreVertical size={22} /> : null}
-        onRightPress={toggleTournamentOptions}
+        rightContent={canEdit ? <Pencil size={22} /> : null}
+        onRightPress={() => safePush(`/tournament/edit/${tournament.id}`)}
+        rightAccessibilityLabel="Edit tournament"
       />
-      {isOptionsOpen && (
-        <View className="absolute right-5 top-20 z-50 min-w-[190px] bg-card p-1 shadow-md">
-          {canEdit && (
-            <Pressable
-              className="px-3 py-3"
-              onPress={() => {
-                setIsOptionsOpen(false);
-                router.push(`/tournament/edit/${tournament.id}`);
-              }}
-            >
-              <Text className="text-sm text-foreground">Edit tournament</Text>
-            </Pressable>
+      <View className="gap-3 px-4 pb-3">
+        <Card tonal={Boolean(champion)} className="gap-3 p-4">
+          {champion ? (
+            <View className="flex-row items-center gap-3">
+              <View className="h-11 w-11 items-center justify-center rounded-full bg-primary">
+                <Trophy size={22} color={primaryForeground} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold uppercase text-muted-foreground">
+                  Tournament complete
+                </Text>
+                <Text className="text-lg font-extrabold" numberOfLines={1}>
+                  {champion.name} wins
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-muted-foreground">
+                {tournament.matchType === "singles" ? "Singles" : "Doubles"} · BO{tournament.bestOf} ·{" "}
+                {tournament.scoring} pts
+              </Text>
+              <TournamentStatusBadge status={tournament.status} />
+            </View>
           )}
-        </View>
-      )}
 
-      {tournament.status === "concluded" && standings.length > 0 && (
-        <View className="border-b border-border bg-muted px-5 py-3">
-          <Text className="text-center text-sm text-muted-foreground">Tournament complete</Text>
-          <Text className="text-center text-base font-semibold text-foreground">
-            {standings[0].name} wins
+          <Text className="text-xs text-muted-foreground">
+            {formatListDate(tournament.createdAt)}
           </Text>
-        </View>
-      )}
 
-      {hasBracket && (
-        <View className="flex-row border-b border-border">
-          <TabButton label="Bracket" active={activeTab === "bracket"} onPress={() => setActiveTab("bracket")} />
-          <TabButton label="Standings" active={activeTab === "standings"} onPress={() => setActiveTab("standings")} />
-        </View>
-      )}
+          {allMatches.length > 0 ? (
+            <View className="gap-1.5">
+              <View className="h-2 overflow-hidden rounded-full bg-muted">
+                <View
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </View>
+              <Text className="text-xs text-muted-foreground">
+                {playedCount} of {allMatches.length} matches played
+              </Text>
+            </View>
+          ) : null}
+        </Card>
+
+        {hasBracket ? (
+          <SegmentedControl options={TAB_OPTIONS} value={activeTab} onChange={setActiveTab} />
+        ) : null}
+      </View>
 
       {!hasBracket ? (
-        <View className="flex-1 items-center justify-center px-10">
-          <Text className="text-center text-muted-foreground">
-            No bracket generated yet for this tournament.
-          </Text>
-        </View>
+        <EmptyState
+          icon={Trophy}
+          title="No bracket yet"
+          subtitle="No bracket has been generated for this tournament."
+        />
       ) : activeTab === "bracket" ? (
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 24 }}>
+        <ScrollView contentContainerClassName="gap-6 px-4 pb-8">
           {bracket!.rounds.map((matches, index) => (
             <RoundSection key={index} roundNumber={index + 1} matches={matches} />
           ))}
@@ -148,87 +165,95 @@ export default function TournamentDetailScreen() {
   );
 }
 
-function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} className="flex-1 items-center py-3">
-      <Text className={cn("text-sm font-medium", active ? "text-foreground" : "text-muted-foreground")}>
-        {label}
-      </Text>
-      {active && <View className="mt-2 h-0.5 w-10 rounded-full bg-foreground" />}
-    </Pressable>
-  );
-}
-
 function RoundSection({ roundNumber, matches }: { roundNumber: number; matches: BracketMatch[] }) {
+  const done = matches.filter((match) => match.status === "concluded").length;
+
   return (
-    <View className="gap-3">
-      <Text className="text-base font-semibold text-foreground">Round {roundNumber}</Text>
-      <View className="gap-2">
+    <View className="gap-2.5">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-base font-bold">Round {roundNumber}</Text>
+        <Text className="text-xs text-muted-foreground">
+          {done}/{matches.length} done
+        </Text>
+      </View>
+      <View className="gap-2.5">
         {matches.map((match) => (
-          <MatchRow key={match.id} match={match} />
+          <MatchCard key={match.id} match={match} />
         ))}
       </View>
     </View>
   );
 }
 
-function MatchRow({ match }: { match: BracketMatch }) {
+function MatchCard({ match }: { match: BracketMatch }) {
+  const { mutedForeground } = useThemeColors();
   const canScore = Boolean(match.sideA && match.sideB);
-  const scoreLabel =
-    match.status === "upcoming" && match.teamASets === 0 && match.teamBSets === 0
-      ? "vs"
-      : `${match.teamASets} - ${match.teamBSets}`;
+  const concluded = match.status === "concluded";
+  const showSets = match.status !== "upcoming" || match.teamASets > 0 || match.teamBSets > 0;
+  const aWon = concluded && match.winnerTeamId !== null && match.winnerTeamId === match.sideA?.id;
+  const bWon = concluded && match.winnerTeamId !== null && match.winnerTeamId === match.sideB?.id;
 
   return (
     <Pressable
       disabled={!canScore}
-      onPress={() => router.push(`/tournament/match/${match.id}`)}
-      className="flex-row items-center justify-between rounded-md border border-border px-3 py-3"
+      onPress={() => safePush(`/tournament/match/${match.id}`)}
+      accessibilityRole="button"
+      className={cn(
+        "flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 active:bg-muted",
+        !canScore && "opacity-60",
+      )}
     >
-      <Text className="flex-1 text-sm text-foreground">{match.sideA?.name ?? "TBD"}</Text>
-      <Text className="mx-2 text-xs text-muted-foreground">{scoreLabel}</Text>
-      <Text className="flex-1 text-right text-sm text-foreground">{match.sideB?.name ?? "TBD"}</Text>
+
+      <View className="flex-1 gap-1.5">
+        <SideLine name={match.sideA?.name ?? "TBD"} sets={match.teamASets} showSets={showSets} won={aWon} dim={bWon} />
+        <SideLine name={match.sideB?.name ?? "TBD"} sets={match.teamBSets} showSets={showSets} won={bWon} dim={aWon} />
+      </View>
+
+<View className="flex-row items-center gap-2">
+      {match.status === "ongoing" ? (
+        <Badge label="Live" icon={Radio} variant="live" />
+      ) : concluded ? (
+        <Badge label="Done" icon={CheckCircle2} variant="done" />
+      ) : canScore ? (
+        <Badge label="Ready" icon={Play} variant="outline" />
+      ) : (
+        <Badge label="TBD" icon={Hourglass} variant="muted" />
+      )}
+      </View>
+      {canScore ? <ChevronRight size={18} color={mutedForeground} /> : null}
     </Pressable>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Standings                                                                   */
-/* -------------------------------------------------------------------------- */
-
-// function buildStandings(bracket: Bracket): StandingsRow[] {
-//   const rows = new Map<number, StandingsRow>();
-
-//   function ensureTeam(team: BracketTeam | null) {
-//     if (!team || rows.has(team.id)) return;
-//     rows.set(team.id, { teamId: team.id, name: team.name, wins: 0, losses: 0, ties: 0, played: 0 });
-//   }
-
-//   for (const round of bracket.rounds) {
-//     for (const match of round) {
-//       ensureTeam(match.sideA);
-//       ensureTeam(match.sideB);
-
-//       if (match.status !== "concluded" || !match.sideA || !match.sideB) continue;
-
-//       const teamA = rows.get(match.sideA.id)!;
-//       const teamB = rows.get(match.sideB.id)!;
-//       teamA.played += 1;
-//       teamB.played += 1;
-
-//       if (match.winnerTeamId === match.sideA.id) {
-//         teamA.wins += 1;
-//         teamB.losses += 1;
-//       } else if (match.winnerTeamId === match.sideB.id) {
-//         teamB.wins += 1;
-//         teamA.losses += 1;
-//       } else {
-//         teamA.ties += 1;
-//         teamB.ties += 1;
-//       }
-//     }
-//   }
-
-//   return Array.from(rows.values()).sort((a, b) => b.wins - a.wins || b.played - a.played);
-// }
-
+function SideLine({
+  name,
+  sets,
+  showSets,
+  won,
+  dim,
+}: {
+  name: string;
+  sets: number;
+  showSets: boolean;
+  won: boolean;
+  dim: boolean;
+}) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <Text
+        numberOfLines={1}
+        className={cn("flex-1 text-sm", won ? "font-bold" : "font-medium", dim && "text-muted-foreground")}
+      >
+        {name}
+      </Text>
+      {showSets ? (
+        <Text
+          className={cn("w-5 text-right text-sm", won ? "font-extrabold" : "text-muted-foreground")}
+          style={{ fontVariant: ["tabular-nums"] }}
+        >
+          {sets}
+        </Text>
+      ) : null}
+    </View>
+  );
+}

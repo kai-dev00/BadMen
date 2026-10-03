@@ -1,165 +1,10 @@
-// import React, { useEffect, useRef } from "react";
-// import { Animated, Text, TouchableOpacity, View } from "react-native";
-// import { CheckCircle2 } from "lucide-react-native";
-
-// export type MatchStatus = "concluded" | "ongoing" | "upcoming";
-
-// export interface Match {
-//   id: string;
-//   matchType: "singles" | "doubles";
-//   bestOf: number;
-//   scoring: number;
-//   rematchNumber: number;
-//   createdAt: string;
-//   endedAt: string | null;
-//   teamASets: number;
-//   teamBSets: number;
-//   teamAName: string;
-//   teamBName: string;
-//   playerA: string;
-//   playerB: string;
-//   status: MatchStatus;
-//   result?: string;
-// }
-
-// export default function MatchRow({
-//   match,
-//   selected = false,
-//   onPress,
-//   onLongPress,
-// }: {
-//   match: Match;
-//   selected?: boolean;
-//   onPress?: (match: Match) => void;
-//   onLongPress?: (match: Match) => void;
-// }) {
-//   const sideAName =
-//     match.matchType === "doubles"
-//       ? match.teamAName
-//       : match.playerA;
-//   const sideBName =
-//     match.matchType === "doubles"
-//       ? match.teamBName
-//       : match.playerB;
-
-//   const showSetScore = match.status !== "upcoming";
-//   const colorSetScore = match.status === "concluded";
-//   const teamAWon = match.teamASets > match.teamBSets;
-//   const livePulse = useRef(new Animated.Value(0.35)).current;
-//   const createdLabel = formatCreatedAt(match.createdAt);
-//   const endedLabel = match.endedAt ? formatCreatedAt(match.endedAt, "Ended") : null;
-
-//   useEffect(() => {
-//     if (match.status !== "ongoing") {
-//       livePulse.setValue(1);
-//       return;
-//     }
-
-//     const animation = Animated.loop(
-//       Animated.sequence([
-//         Animated.timing(livePulse, {
-//           toValue: 1,
-//           duration: 700,
-//           useNativeDriver: true,
-//         }),
-//         Animated.timing(livePulse, {
-//           toValue: 0.35,
-//           duration: 700,
-//           useNativeDriver: true,
-//         }),
-//       ]),
-//     );
-
-//     animation.start();
-//     return () => animation.stop();
-//   }, [livePulse, match.status]);
-
-//   return (
-//     <TouchableOpacity
-//       activeOpacity={0.6}
-//       onPress={() => onPress?.(match)}
-//       onLongPress={() => onLongPress?.(match)}
-//       className={`h-28 flex-row items-center justify-between px-4 ${selected ? "bg-muted" : ""}`}
-//     >
-//       <View className="flex-1 pr-3">
-//         <Text className="text-[11px] capitalize text-[#8a8a8a]">
-//           {match.matchType}
-//         </Text>
-//         {match.rematchNumber > 0 && (
-//           <Text className="text-[11px] text-[#8a8a8a]">
-//             Rematch #{match.rematchNumber}
-//           </Text>
-//         )}
-//         <View className="flex-row items-center">
-//           <Text className="text-[15px] font-medium text-[#1a1a1a]">
-//             {sideAName}
-//           </Text>
-//           {showSetScore && (
-//             <Text className={`text-[15px] font-medium ${colorSetScore ? (teamAWon ? "text-green-600" : "text-red-600") : "text-[#1a1a1a]"}`}>
-//               {` (${match.teamASets})`}
-//             </Text>
-//           )}
-//           <Text className="text-[15px] font-medium text-[#1a1a1a]">{" vs "}</Text>
-//           <Text className="text-[15px] font-medium text-[#1a1a1a]">
-//             {sideBName}
-//           </Text>
-//           {showSetScore && (
-//             <Text className={`text-[15px] font-medium ${colorSetScore ? (teamAWon ? "text-red-600" : "text-green-600") : "text-[#1a1a1a]"}`}>
-//               {`(${match.teamBSets})`}
-//             </Text>
-//           )}
-//         </View>
-//         <Text className="mt-0.5 text-[11px] text-[#8a8a8a]">
-//           BO{match.bestOf} | {match.scoring} points
-//         </Text>
-//         <Text className="mt-0.5 text-[11px] text-[#8a8a8a]">
-//           {createdLabel}
-//         </Text>
-//         {endedLabel && (
-//           <Text className="mt-0.5 text-[11px] text-[#8a8a8a]">
-//             {endedLabel}
-//           </Text>
-//         )}
-//       </View>
-//       <View className="items-end">
-//         {selected ? (
-//           <CheckCircle2 size={20} color="#1a1a1a" />
-//         ) : match.status === "ongoing" ? (
-//           <View className="flex-row items-center">
-//             <Animated.View
-//               className="mr-1 h-2 w-2 rounded-full bg-red-600"
-//               style={{ opacity: livePulse }}
-//             />
-//             <Text className="text-[11px] font-medium text-red-600">Live</Text>
-//           </View>
-//         ) : (
-//           <Text className="text-[11px] capitalize text-[#8a8a8a]">
-//             {match.status}
-//           </Text>
-//         )}
-//       </View>
-//     </TouchableOpacity>
-//   );
-// }
-
-// function formatCreatedAt(value: string, prefix = "Created") {
-//   const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
-//   const date = new Date(
-//     normalizedValue.endsWith("Z") ? normalizedValue : `${normalizedValue}Z`,
-//   );
-
-//   if (Number.isNaN(date.getTime())) return `${prefix} ${value}`;
-
-//   return `${prefix} ${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
-//     hour: "numeric",
-//     minute: "2-digit",
-//     hour12: true,
-//   })}`;
-// }
-
-import React, { useEffect, useRef } from "react";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
-import { CheckCircle2 } from "lucide-react-native";
+import React from "react";
+import { Pressable, View } from "react-native";
+import { CheckCircle2, Radio, Clock } from "lucide-react-native";
+import { Badge } from "@/components/ui/badge";
+import { Text } from "@/components/ui/text";
+import { cn } from "@/lib/utils";
+import { formatListDate } from "@/src/features/common/dates";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export type MatchStatus = "concluded" | "ongoing" | "upcoming";
@@ -182,6 +27,8 @@ export interface Match {
   result?: string;
 }
 
+export const MATCH_ROW_HEIGHT = 96;
+
 export default function MatchRow({
   match,
   selected = false,
@@ -195,126 +42,87 @@ export default function MatchRow({
 }) {
   const { foreground } = useThemeColors();
 
-  const sideAName =
-    match.matchType === "doubles"
-      ? match.teamAName
-      : match.playerA;
-  const sideBName =
-    match.matchType === "doubles"
-      ? match.teamBName
-      : match.playerB;
+  const sideAName = match.matchType === "doubles" ? match.teamAName : match.playerA;
+  const sideBName = match.matchType === "doubles" ? match.teamBName : match.playerB;
 
   const showSetScore = match.status !== "upcoming";
-  const colorSetScore = match.status === "concluded";
-  const teamAWon = match.teamASets > match.teamBSets;
-  const livePulse = useRef(new Animated.Value(0.35)).current;
-  const createdLabel = formatCreatedAt(match.createdAt);
-  const endedLabel = match.endedAt ? formatCreatedAt(match.endedAt, "Ended") : null;
+  const concluded = match.status === "concluded";
+  const aWon = concluded && match.teamASets > match.teamBSets;
+  const bWon = concluded && match.teamBSets > match.teamASets;
 
-  useEffect(() => {
-    if (match.status !== "ongoing") {
-      livePulse.setValue(1);
-      return;
-    }
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(livePulse, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(livePulse, {
-          toValue: 0.35,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-    return () => animation.stop();
-  }, [livePulse, match.status]);
+  const meta = [
+    match.matchType === "singles" ? "Singles" : "Doubles",
+    `BO${match.bestOf}`,
+    `${match.scoring} pts`,
+    match.rematchNumber > 0 ? `Rematch #${match.rematchNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.6}
+    <Pressable
       onPress={() => onPress?.(match)}
       onLongPress={() => onLongPress?.(match)}
-      className={`h-28 flex-row items-center justify-between px-4 ${selected ? "bg-muted" : ""}`}
+      style={{ height: MATCH_ROW_HEIGHT }}
+      className={cn(
+        "flex-row items-center gap-3 px-4",
+        selected ? "bg-tonal-surface" : "active:bg-muted",
+      )}
     >
-      <View className="flex-1 pr-3">
-        {/* <Text className="text-[11px] capitalize text-muted-foreground">
-          {match.matchType}
-        </Text> */}
-        {match.rematchNumber > 0 && (
-          <Text className="text-[11px] text-muted-foreground">
-            Rematch #{match.rematchNumber}
-          </Text>
-        )}
-        <View className="flex-row items-center">
-          <Text className="text-[15px] font-medium text-foreground">
-            {sideAName}
-          </Text>
-          {showSetScore && (
-            <Text className={`text-[15px] font-medium ${colorSetScore ? (teamAWon ? "text-success" : "text-destructive") : "text-foreground"}`}>
-              {` (${match.teamASets})`}
-            </Text>
-          )}
-          <Text className="text-[15px] font-medium text-foreground">{" vs "}</Text>
-          <Text className="text-[15px] font-medium text-foreground">
-            {sideBName}
-          </Text>
-          {showSetScore && (
-            <Text className={`text-[15px] font-medium ${colorSetScore ? (teamAWon ? "text-destructive" : "text-success") : "text-foreground"}`}>
-              {`(${match.teamBSets})`}
-            </Text>
-          )}
-        </View>
-        <Text className="mt-0.5 text-[11px] text-muted-foreground capitalize">
-          {match.matchType} | BO{match.bestOf} | {match.scoring} points
+      <View className="flex-1 gap-1">
+        <TeamLine name={sideAName} sets={match.teamASets} showSets={showSetScore} won={aWon} dim={bWon} />
+        <TeamLine name={sideBName} sets={match.teamBSets} showSets={showSetScore} won={bWon} dim={aWon} />
+        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+          {meta}
         </Text>
-        <Text className="mt-0.5 text-[11px] text-muted-foreground">
-          {createdLabel}
-        </Text>
-        {endedLabel && (
-          <Text className="mt-0.5 text-[11px] text-muted-foreground">
-            {endedLabel}
-          </Text>
-        )}
       </View>
-      <View className="items-end">
+
+      <View className="items-center justify-center gap-1">
         {selected ? (
-          <CheckCircle2 size={20} color={foreground} />
+          <CheckCircle2 size={22} color={foreground} />
         ) : match.status === "ongoing" ? (
-          <View className="flex-row items-center">
-            <Animated.View
-              className="mr-1 h-2 w-2 rounded-full bg-destructive"
-              style={{ opacity: livePulse }}
-            />
-            <Text className="text-[11px] font-medium text-destructive">Live</Text>
-          </View>
+          <Badge label="Live" icon={Radio} variant="live" />
+        ) : concluded ? (
+          <Badge label="Done" icon={CheckCircle2} variant="done" />
         ) : (
-          <Text className="text-[11px] capitalize text-muted-foreground">
-            {match.status}
-          </Text>
+          <Badge label="Upcoming" icon={Clock} variant="outline" />
         )}
+        <Text className="text-[11px] text-muted-foreground">{formatListDate(match.createdAt)}</Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
-function formatCreatedAt(value: string, prefix = "Created") {
-  const normalizedValue = value.includes("T") ? value : value.replace(" ", "T");
-  const date = new Date(
-    normalizedValue.endsWith("Z") ? normalizedValue : `${normalizedValue}Z`,
+function TeamLine({
+  name,
+  sets,
+  showSets,
+  won,
+  dim,
+}: {
+  name: string;
+  sets: number;
+  showSets: boolean;
+  won: boolean;
+  dim: boolean;
+}) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <Text
+        numberOfLines={1}
+        className={cn("flex-1 text-[15px]", won ? "font-bold" : "font-medium", dim && "text-muted-foreground")}
+      >
+        {name}
+      </Text>
+      {showSets ? (
+        <Text
+          className={cn("w-5 text-right text-[15px]", won ? "font-extrabold" : "text-muted-foreground")}
+          style={{ fontVariant: ["tabular-nums"] }}
+        >
+          {sets}
+        </Text>
+      ) : null}
+    </View>
   );
-
-  if (Number.isNaN(date.getTime())) return `${prefix} ${value}`;
-
-  return `${prefix} ${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  })}`;
 }
+

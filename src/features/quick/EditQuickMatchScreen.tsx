@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from "react-native";
+import { KeyboardAvoidingView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { QuickForm } from "./components/QuickForm";
@@ -53,15 +53,11 @@ export default function EditQuickMatchScreen() {
       <Header title="Edit Quick Match" showBack onBackPress={() => router.back()} />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
       >
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ padding: 20, paddingBottom: 80 }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View className="flex-1">
           <QuickForm onSubmit={handleUpdate} defaultValues={initialValues} />
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

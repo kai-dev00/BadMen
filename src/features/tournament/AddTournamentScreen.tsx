@@ -4,7 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Text,
   View,
@@ -46,9 +45,9 @@ export default function AddTournamentScreen() {
       <Header title="Add Tournament" showBack onBackPress={() => router.back()} />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
       >
-        <View className="flex-1 p-5 pb-20">
+        <View className="flex-1">
           <TournamentForm onSubmit={handleCreate} />
         </View>
       </KeyboardAvoidingView>

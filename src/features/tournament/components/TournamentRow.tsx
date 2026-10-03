@@ -1,6 +1,10 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
-import { CheckCircle2 } from "lucide-react-native";
+import React from "react";
+import { Pressable, View } from "react-native";
+import { CheckCircle2, Trophy, Radio, Pencil, Clock } from "lucide-react-native";
+import { Badge } from "@/components/ui/badge";
+import { Text } from "@/components/ui/text";
+import { cn } from "@/lib/utils";
+import { formatListDate } from "@/src/features/common/dates";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export type TournamentStatus = "draft" | "upcoming" | "ongoing" | "concluded";
@@ -15,14 +19,25 @@ export interface TournamentListItem {
   format: TournamentFormat;
   status: TournamentStatus;
   playerCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const FORMAT_LABELS: Record<TournamentFormat, string> = {
+export const FORMAT_LABELS: Record<TournamentFormat, string> = {
   round_robin: "Round Robin",
   single_elim: "Single Elimination",
   swiss: "Swiss",
   other: "Other",
 };
+
+export const TOURNAMENT_ROW_HEIGHT = 96;
+
+export function TournamentStatusBadge({ status }: { status: TournamentStatus }) {
+  if (status === "ongoing") return <Badge label="Live" icon={Radio} variant="live" />;
+  if (status === "concluded") return <Badge label="Done" icon={CheckCircle2} variant="done" />;
+  if (status === "draft") return <Badge label="Draft" icon={Pencil} variant="outline" />;
+  return <Badge label="Upcoming" icon={Clock} variant="outline" />;
+}
 
 export default function TournamentRow({
   tournament,
@@ -35,69 +50,43 @@ export default function TournamentRow({
   onPress?: (tournament: TournamentListItem) => void;
   onLongPress?: (tournament: TournamentListItem) => void;
 }) {
-  const { foreground } = useThemeColors();
-  const livePulse = useRef(new Animated.Value(0.35)).current;
-
-  useEffect(() => {
-    if (tournament.status !== "ongoing") {
-      livePulse.setValue(1);
-      return;
-    }
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(livePulse, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(livePulse, {
-          toValue: 0.35,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-    return () => animation.stop();
-  }, [livePulse, tournament.status]);
+  const { foreground, mutedForeground } = useThemeColors();
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.6}
+    <Pressable
       onPress={() => onPress?.(tournament)}
       onLongPress={() => onLongPress?.(tournament)}
-      className={`h-28 flex-row items-center justify-between px-4 ${selected ? "bg-muted" : ""}`}
+      style={{ height: TOURNAMENT_ROW_HEIGHT }}
+      className={cn(
+        "flex-row items-center gap-3 px-4",
+        selected ? "bg-tonal-surface" : "active:bg-muted",
+      )}
     >
-      <View className="flex-1 pr-3">
-        <Text className="text-[15px] font-medium text-foreground">
+      {/* <View className="h-11 w-11 items-center justify-center rounded-full bg-muted">
+        <Trophy size={20} color={mutedForeground} />
+      </View> */}
+
+      <View className="flex-1 gap-0.5">
+        <Text className="text-[15px] font-semibold" numberOfLines={1}>
           {tournament.name}
         </Text>
-        <Text className="mt-0.5 text-[11px] text-muted-foreground">
-          {FORMAT_LABELS[tournament.format]} | {tournament.playerCount} players
+        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+          {FORMAT_LABELS[tournament.format]} · {tournament.playerCount} players
         </Text>
-        <Text className="mt-0.5 text-[11px] text-muted-foreground capitalize">
-          {tournament.matchType} | BO{tournament.bestOf} | {tournament.scoring} points
+        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+          {tournament.matchType === "singles" ? "Singles" : "Doubles"} · BO{tournament.bestOf} ·{" "}
+          {tournament.scoring} pts
         </Text>
       </View>
-      <View className="items-end">
+
+      <View className="items-center justify-center gap-1">
         {selected ? (
-          <CheckCircle2 size={20} color={foreground} />
-        ) : tournament.status === "ongoing" ? (
-          <View className="flex-row items-center">
-            <Animated.View
-              className="mr-1 h-2 w-2 rounded-full bg-destructive"
-              style={{ opacity: livePulse }}
-            />
-            <Text className="text-[11px] font-medium text-destructive">Live</Text>
-          </View>
+          <CheckCircle2 size={22} color={foreground} />
         ) : (
-          <Text className="text-[11px] capitalize text-muted-foreground">
-            {tournament.status}
-          </Text>
+          <TournamentStatusBadge status={tournament.status} />
         )}
+        <Text className="text-[11px] text-muted-foreground">{formatListDate(tournament.createdAt)}</Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

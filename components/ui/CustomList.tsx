@@ -28,8 +28,10 @@ export default function CustomList<T>({
 }: ListProps<T>) {
   return (
     <View
+      // Shrinks to its rows when short, scrolls when long.
+      style={{ flexGrow: 0, flexShrink: 1 }}
       className={cn(
-        "mx-4 flex-1 overflow-hidden rounded-2xl bg-card",
+        "mx-4 overflow-hidden rounded-2xl bg-card",
         bordered && "border border-border",
         className,
       )}
