@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kaidev00.badmen"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kaidev00.badmen"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -29,6 +31,13 @@
     },
     "plugins": [
       "expo-sqlite"
-    ]
+    ],
+    "scheme": "badmen",
+    "extra": {
+      "eas": {
+        "projectId": "fee307f5-1dfe-474e-a5a1-d22289a850e5"
+      }
+    },
+    "owner": "kaiiuue"
   }
 }
