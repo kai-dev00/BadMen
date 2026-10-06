@@ -3,9 +3,8 @@ import { SQLiteDatabase } from "expo-sqlite";
 /**
  * Schema versions (tracked with `PRAGMA user_version`):
  *  1 — original local-only schema (INTEGER ids, hard deletes). Never stamped (user_version 0).
- *  2 — TEXT uuid primary keys, ISO timestamps, `deleted_at` soft deletes, plus `dirty` and
- *      `sync_meta` columns/tables. The app is offline-only now: `dirty` and `sync_meta` are no
- *      longer read by anything. They are kept so existing installs need no schema change.
+ *  2 — sync-ready: TEXT uuid primary keys, ISO timestamps, `deleted_at` tombstones and a
+ *      `dirty` flag on every table, plus `sync_meta`.
  *
  * There is no production data to carry over, so anything found at version 0 is dropped and the
  * v2 schema is created fresh. Future schema changes should add real incremental steps here.
@@ -138,7 +137,7 @@ const V2_SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_tournament_match_sets_match ON tournament_match_sets(tournament_match_id);
 `;
 
-/** Tables in dependency order (parents first). */
+/** Tables in dependency order (parents first). Also the order a sync push must follow. */
 export const SYNCED_TABLES = [
   "quick_matches",
   "quick_match_players",
