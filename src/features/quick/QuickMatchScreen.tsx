@@ -229,7 +229,7 @@ export default function QuickMatchScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <Header
-        title={selecting ? `${selectedIds.size} selected` : "Quickey"}
+        title={selecting ? `${selectedIds.size} selected` : "Quick"}
         subtitle={
           selecting || !hasMatches
             ? undefined
