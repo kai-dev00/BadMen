@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeBackupCode } from "@/src/backup/code";
 
 const email = z.string().trim().min(1, "Email is required").email("Enter a valid email");
 const password = z.string().min(6, "Use at least 6 characters");
@@ -34,3 +35,12 @@ export const resetSchema = z
     message: "Passwords don't match",
   });
 export type ResetValues = z.infer<typeof resetSchema>;
+
+export const restoreSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(1, "Enter your backup code")
+    .refine((value) => normalizeBackupCode(value) !== null, "That code isn't valid"),
+});
+export type RestoreValues = z.infer<typeof restoreSchema>;

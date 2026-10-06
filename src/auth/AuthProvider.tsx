@@ -12,6 +12,11 @@ type AuthContextValue = {
   isLoading: boolean;
   /** False when the Supabase env vars are missing (app runs local-only). */
   isConfigured: boolean;
+  /** Using the app without an account: everything stays on this device and nothing syncs. */
+  isGuest: boolean;
+  continueAsGuest: () => Promise<void>;
+  /** Ends guest mode. The caller is responsible for clearing the device's data. */
+  leaveGuest: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   /** `needsConfirmation` is true when the project requires the emailed code before sign-in. */
   signUp: (email: string, password: string) => Promise<AuthResult & { needsConfirmation: boolean }>;
@@ -40,10 +45,21 @@ async function readSavedSession(): Promise<Session | null> {
   }
 }
 
+const GUEST_KEY = "cockers-guest";
+
+async function readGuestFlag() {
+  try {
+    return (await AsyncStorage.getItem(GUEST_KEY)) === "1";
+  } catch {
+    return false;
+  }
+}
+
 const NOT_CONFIGURED = "Online features aren't set up for this build.";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
@@ -51,21 +67,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let active = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      const restored = data.session ?? (await readSavedSession());
+    Promise.all([
+      supabase.auth.getSession().then(async ({ data }) => data.session ?? (await readSavedSession())),
+      readGuestFlag(),
+    ]).then(([restored, guest]) => {
       if (!active) return;
       setSession(restored);
+      setIsGuest(guest && !restored);
       setIsLoading(false);
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
+      if (next) {
+        // A real account replaces guest mode.
+        setIsGuest(false);
+        AsyncStorage.removeItem(GUEST_KEY).catch(() => undefined);
+      }
     });
 
     return () => {
       active = false;
       subscription.subscription.unsubscribe();
     };
+  }, []);
+
+  const continueAsGuest = useCallback<AuthContextValue["continueAsGuest"]>(async () => {
+    try {
+      await AsyncStorage.setItem(GUEST_KEY, "1");
+    } catch {
+      // The choice just won't survive a restart.
+    }
+    setIsGuest(true);
+  }, []);
+
+  const leaveGuest = useCallback<AuthContextValue["leaveGuest"]>(async () => {
+    try {
+      await AsyncStorage.removeItem(GUEST_KEY);
+    } catch {
+      // Ignore: the in-memory flag below is what the UI uses.
+    }
+    setIsGuest(false);
   }, []);
 
   const signIn = useCallback<AuthContextValue["signIn"]>(async (email, password) => {
@@ -118,7 +160,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback<AuthContextValue["signOut"]>(async () => {
     if (!isSupabaseConfigured) return { error: null };
     const { error } = await supabase.auth.signOut();
-    return { error: error?.message ?? null };
+    if (error) {
+      // Couldn't reach the server (offline). The person still asked to sign out, so drop the saved login here.
+      try {
+        await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+      } catch {
+        // Ignore.
+      }
+      setSession(null);
+    }
+    return { error: null };
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -127,6 +178,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       isLoading,
       isConfigured: isSupabaseConfigured,
+      isGuest,
+      continueAsGuest,
+      leaveGuest,
       signIn,
       signUp,
       confirmSignUp,
@@ -135,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       signOut,
     }),
-    [session, isLoading, signIn, signUp, confirmSignUp, resendSignUpCode, requestPasswordReset, resetPassword, signOut],
+    [session, isGuest, continueAsGuest, leaveGuest, isLoading, signIn, signUp, confirmSignUp, resendSignUpCode, requestPasswordReset, resetPassword, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

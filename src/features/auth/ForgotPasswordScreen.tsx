@@ -57,6 +57,7 @@ export default function ForgotPasswordScreen() {
   if (email) {
     return (
       <AuthScreenLayout
+        key="reset"
         title="Reset password"
         subtitle={`If ${email} has an account, we sent it a code. Enter the code and choose a new password.`}
       >
@@ -128,6 +129,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthScreenLayout
+      key="request"
       title="Forgot password"
       subtitle="Enter your account email and we'll send you a code to reset your password."
     >

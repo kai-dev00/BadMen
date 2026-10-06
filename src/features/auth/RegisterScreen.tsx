@@ -53,6 +53,7 @@ export default function RegisterScreen() {
   if (pendingEmail) {
     return (
       <AuthScreenLayout
+        key="verify"
         title="Verify email"
         subtitle={`We sent a code to ${pendingEmail}. Enter it below to finish creating your account.`}
       >
@@ -102,6 +103,7 @@ export default function RegisterScreen() {
 
   return (
     <AuthScreenLayout
+      key="register"
       title="Create account"
       subtitle="Your matches are saved on this device and sync once you're signed in."
     >

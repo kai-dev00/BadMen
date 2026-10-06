@@ -28,7 +28,7 @@ export default function RootLayout() {
     <ThemeProvider value={NAV_THEME[scheme]}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <SQLiteProvider databaseName="badmen.db" onInit={migrateDbIfNeeded}>
+          <SQLiteProvider databaseName="cockers.db" onInit={migrateDbIfNeeded}>
             <SyncProvider>
               <SafeAreaProvider>
                 <StatusBar style={scheme === "dark" ? "light" : "dark"} />
@@ -43,15 +43,17 @@ export default function RootLayout() {
   );
 }
 
-/** Signed-in users get the app; everyone else only sees the welcome and auth screens. */
+/** Signed-in users and guests get the app; everyone else only sees the welcome and auth screens. */
 function RootStack({ backgroundColor }: { backgroundColor: string }) {
-  const { session, isLoading, isConfigured } = useAuth();
+  const { session, isGuest, isLoading, isConfigured } = useAuth();
 
   // Don't flash the welcome screen while the saved session is being read.
   if (isLoading) return null;
 
   // Without Supabase config nobody can sign in, so fall back to the local-only app.
-  const canUseApp = Boolean(session) || !isConfigured;
+  const canUseApp = Boolean(session) || isGuest || !isConfigured;
+  // Guests can still reach the sign-in screens to create an account later.
+  const canSignIn = isConfigured && !session;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
@@ -61,6 +63,9 @@ function RootStack({ backgroundColor }: { backgroundColor: string }) {
 
       <Stack.Protected guard={!canUseApp}>
         <Stack.Screen name="welcome" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={canSignIn}>
         <Stack.Screen name="auth" />
       </Stack.Protected>
     </Stack>

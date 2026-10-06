@@ -11,14 +11,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Alert, AppState } from "react-native";
+import { AppState } from "react-native";
 import { useAuth } from "../auth/AuthProvider";
 import { supabaseRemote } from "./supabaseRemote";
 import {
   countPending,
   getLastSyncedAt,
   getLastUserId,
-  hasLocalData,
   resetLocalData,
   setLastUserId,
   syncOnce,
@@ -40,20 +39,6 @@ const SyncContext = createContext<SyncContextValue | null>(null);
 const WRITE_DEBOUNCE_MS = 2000;
 const POLL_MS = 60_000;
 
-function confirmReplaceLocalData() {
-  return new Promise<boolean>((resolve) => {
-    Alert.alert(
-      "Switch account?",
-      "This device has matches from a different account. Signing in will replace them with this account's data.",
-      [
-        { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-        { text: "Replace", style: "destructive", onPress: () => resolve(true) },
-      ],
-      { cancelable: false },
-    );
-  });
-}
-
 /**
  * Keeps the local SQLite database and Supabase in step while a user is signed in:
  * on sign-in, app foreground, reconnect, after local writes, and on a slow poll.
@@ -62,7 +47,7 @@ function confirmReplaceLocalData() {
 export function SyncProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const queryClient = useQueryClient();
-  const { user, isConfigured, signOut } = useAuth();
+  const { user, isConfigured } = useAuth();
   const userId = user?.id ?? null;
 
   const [status, setStatus] = useState<SyncStatus>("idle");
@@ -78,31 +63,23 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     setPending(await countPending(db));
   }, [db]);
 
-  /** Returns false when the user chose not to take over this device's data. */
+  /**
+   * Makes this device belong to the signed-in user. Data made before signing in (as a guest) is kept
+   * and uploaded. Leftovers from a different account are cleared without asking: signing out already
+   * wipes the device, so this only happens if that was interrupted.
+   */
   const claimDevice = useCallback(
     async (id: string) => {
       const owner = await getLastUserId(db);
-      if (owner === id) return true;
+      if (owner === id) return;
 
-      if (owner === null) {
-        // Data created while signed out belongs to whoever signs in first.
-        await setLastUserId(db, id);
-        return true;
+      if (owner !== null) {
+        await resetLocalData(db);
+        await queryClient.invalidateQueries();
       }
-
-      if (await hasLocalData(db)) {
-        if (!(await confirmReplaceLocalData())) {
-          await signOut();
-          return false;
-        }
-      }
-
-      await resetLocalData(db);
       await setLastUserId(db, id);
-      await queryClient.invalidateQueries();
-      return true;
     },
-    [db, queryClient, signOut],
+    [db, queryClient],
   );
 
   const syncNow = useCallback(async () => {
@@ -123,7 +100,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (!(await claimDevice(userId))) return;
+      await claimDevice(userId);
 
       const result = await syncOnce(db, supabaseRemote);
       if (result.pulled > 0) await queryClient.invalidateQueries();
